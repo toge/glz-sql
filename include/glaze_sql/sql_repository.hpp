@@ -14,6 +14,33 @@
 namespace glz_sql {
 
 /**
+ * @brief コンパイル時文字列を保持する構造体（NTTP として使用可能）
+ */
+template <size_t N>
+struct fixed_string {
+  char data[N]{};
+
+  /**
+   * @brief 文字列リテラルから構築するコンストラクタ
+   */
+  consteval fixed_string(const char (&str)[N]) {
+    for (size_t i = 0; i < N; ++i) {
+      data[i] = str[i];
+    }
+  }
+
+  /**
+   * @brief std::string_view に変換する
+   */
+  consteval operator std::string_view() const { return {data, N - 1}; }
+
+  /**
+   * @brief 文字列長を取得する
+   */
+  consteval auto size() const -> size_t { return N - 1; }
+};
+
+/**
  * @brief 構造体が SQL テーブルとして使用できることを保証するコンセプト
  */
 template <typename T>
@@ -21,6 +48,20 @@ concept sql_table = requires {
   { T::table_name } -> std::convertible_to<std::string_view>;
   glz::meta<T>::value;
 };
+
+/**
+ * @brief 指定されたカラム名が構造体のフィールドとして存在することを保証するコンセプト
+ */
+template <fixed_string Column, typename T>
+concept valid_column = [] {
+  constexpr auto n = glz::reflect<T>::size;
+  for (size_t i = 0; i < n; ++i) {
+    if (glz::reflect<T>::keys[i] == std::string_view(Column)) {
+      return true;
+    }
+  }
+  return false;
+}();
 
 /**
  * @brief Glaze リフレクションを活用した汎用 SQLite リポジトリクラス
