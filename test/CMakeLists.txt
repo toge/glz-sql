@@ -11,7 +11,7 @@ target_link_libraries(all_test PRIVATE
   SQLite3::SQLite3
   quill::quill
 )
-target_include_directories(all_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR})
+target_include_directories(all_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/include)
 target_compile_features(all_test PRIVATE ${STD_CPP})
 
 add_test(NAME all_test COMMAND all_test -r junit)
