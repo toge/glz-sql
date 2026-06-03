@@ -5,6 +5,7 @@
 
 #include <glaze/glaze.hpp>
 #include <quill/Quill.h>
+#include <format>
 #include <optional>
 #include <string>
 #include <string_view>
