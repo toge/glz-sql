@@ -147,13 +147,14 @@ class sql_repository {
 
   /**
    * @brief 指定カラムで条件検索する（1件）
-   * @param column 条件カラム名
+   * @tparam Column 条件カラム名（コンパイル時定数）
    * @param value 条件値
    * @return レコード（見つからない場合は std::nullopt）
    */
-  template <typename V>
-  auto find_by(std::string_view column, const V& value) const -> std::optional<T> {
-    auto const sql  = generate_select_by_sql(column);
+  template <fixed_string Column, typename V>
+    requires valid_column<Column, T>
+  auto find_by(const V& value) const -> std::optional<T> {
+    auto const sql  = generate_select_by_sql(std::string_view(Column));
     auto       stmt = db_.prepare(sql);
     if (stmt == nullptr) {
       std::cerr << "ERROR: Failed to prepare find_by: " << db_.error_message() << std::endl;

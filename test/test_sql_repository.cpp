@@ -62,13 +62,13 @@ TEST_CASE("sql_repository: find_by") {
   repo.insert(User{.id = 1, .name = "Alice", .score = 95.5});
   repo.insert(User{.id = 2, .name = "Bob", .score = 87.3});
 
-  auto alice = repo.find_by("name", "Alice");
+  auto alice = repo.find_by<"name">("Alice");
   REQUIRE(alice.has_value());
   REQUIRE(alice->id == 1);
   REQUIRE(alice->name == "Alice");
   REQUIRE(alice->score == 95.5);
 
-  auto not_found = repo.find_by("name", "Charlie");
+  auto not_found = repo.find_by<"name">("Charlie");
   REQUIRE_FALSE(not_found.has_value());
 }
 
@@ -94,7 +94,7 @@ TEST_CASE("sql_repository: update_by") {
 
   repo.update_by(User{.id = 1, .name = "Alice", .score = 100.0}, "name", "Alice");
 
-  auto alice = repo.find_by("name", "Alice");
+  auto alice = repo.find_by<"name">("Alice");
   REQUIRE(alice.has_value());
   REQUIRE(alice->score == 100.0);
 }
