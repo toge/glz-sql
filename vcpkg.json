@@ -1,0 +1,8 @@
+{
+  "dependencies": [
+    "catch2",
+    "glaze",
+    "sqlite3",
+    "quill"
+  ]
+}
