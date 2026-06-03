@@ -81,7 +81,7 @@ TEST_CASE("sql_repository: select_by") {
   repo.insert(User{.id = 2, .name = "Bob", .score = 87.3});
   repo.insert(User{.id = 3, .name = "Alice", .score = 92.0});
 
-  auto alices = repo.select_by("name", "Alice");
+  auto alices = repo.select_by<"name">("Alice");
   REQUIRE(alices.size() == 2);
 }
 
