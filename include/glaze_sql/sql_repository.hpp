@@ -171,14 +171,15 @@ class sql_repository {
 
   /**
    * @brief 指定カラムを条件に更新する
+   * @tparam CondCol 条件カラム名（コンパイル時定数）
    * @param record 更新後のレコード
-   * @param cond_col 条件カラム名
    * @param cond_val 条件値
    * @return 成功 true / 失敗 false
    */
-  template <typename V>
-  auto update_by(const T& record, std::string_view cond_col, const V& cond_val) const -> bool {
-    auto const sql  = generate_update_by_sql(cond_col);
+  template <fixed_string CondCol, typename V>
+    requires valid_column<CondCol, T>
+  auto update_by(const T& record, const V& cond_val) const -> bool {
+    auto const sql  = generate_update_by_sql(std::string_view(CondCol));
     auto       stmt = db_.prepare(sql);
     if (stmt == nullptr) {
       std::cerr << "ERROR: Failed to prepare update_by: " << db_.error_message() << std::endl;

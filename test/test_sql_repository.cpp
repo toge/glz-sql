@@ -92,7 +92,7 @@ TEST_CASE("sql_repository: update_by") {
 
   repo.insert(User{.id = 1, .name = "Alice", .score = 95.5});
 
-  repo.update_by(User{.id = 1, .name = "Alice", .score = 100.0}, "name", "Alice");
+  repo.update_by<"name">(User{.id = 1, .name = "Alice", .score = 100.0}, "Alice");
 
   auto alice = repo.find_by<"name">("Alice");
   REQUIRE(alice.has_value());
