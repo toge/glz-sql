@@ -4,8 +4,8 @@
 #include "sqlite_bind.hpp"
 
 #include <glaze/glaze.hpp>
-#include <quill/Quill.h>
 #include <format>
+#include <iostream>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -46,7 +46,7 @@ public:
   auto create_table() const -> bool {
     auto const sql = generate_create_table_sql();
     if (!db_.execute(sql)) {
-      LOG_ERROR(quill::get_logger(), "Failed to create table: {}", db_.error_message());
+      std::cerr << "ERROR: Failed to create table: " << db_.error_message() << std::endl;
       return false;
     }
     return true;
@@ -61,13 +61,13 @@ public:
     auto const sql = generate_insert_sql();
     auto stmt = db_.prepare(sql);
     if (stmt == nullptr) {
-      LOG_ERROR(quill::get_logger(), "Failed to prepare insert: {}", db_.error_message());
+      std::cerr << "ERROR: Failed to prepare insert: " << db_.error_message() << std::endl;
       return false;
     }
     bind_fields(stmt.get(), record);
     auto const result = sqlite3_step(stmt.get());
     if (result != SQLITE_DONE) {
-      LOG_ERROR(quill::get_logger(), "Failed to execute insert: {}", db_.error_message());
+      std::cerr << "ERROR: Failed to execute insert: " << db_.error_message() << std::endl;
       return false;
     }
     return true;
@@ -81,7 +81,7 @@ public:
     auto const sql = generate_select_all_sql();
     auto stmt = db_.prepare(sql);
     if (stmt == nullptr) {
-      LOG_ERROR(quill::get_logger(), "Failed to prepare select_all: {}", db_.error_message());
+      std::cerr << "ERROR: Failed to prepare select_all: " << db_.error_message() << std::endl;
       return {};
     }
     return fetch_all(stmt.get());
@@ -98,7 +98,7 @@ public:
     auto const sql = generate_select_by_sql(column);
     auto stmt = db_.prepare(sql);
     if (stmt == nullptr) {
-      LOG_ERROR(quill::get_logger(), "Failed to prepare select_by: {}", db_.error_message());
+      std::cerr << "ERROR: Failed to prepare select_by: " << db_.error_message() << std::endl;
       return {};
     }
     bind_condition(stmt.get(), 1, value);
@@ -116,7 +116,7 @@ public:
     auto const sql = generate_select_by_sql(column);
     auto stmt = db_.prepare(sql);
     if (stmt == nullptr) {
-      LOG_ERROR(quill::get_logger(), "Failed to prepare find_by: {}", db_.error_message());
+      std::cerr << "ERROR: Failed to prepare find_by: " << db_.error_message() << std::endl;
       return std::nullopt;
     }
     bind_condition(stmt.get(), 1, value);
@@ -139,14 +139,14 @@ public:
     auto const sql = generate_update_by_sql(cond_col);
     auto stmt = db_.prepare(sql);
     if (stmt == nullptr) {
-      LOG_ERROR(quill::get_logger(), "Failed to prepare update_by: {}", db_.error_message());
+      std::cerr << "ERROR: Failed to prepare update_by: " << db_.error_message() << std::endl;
       return false;
     }
     bind_fields(stmt.get(), record);
     bind_condition(stmt.get(), static_cast<int>(field_count()) + 1, cond_val);
     auto const result = sqlite3_step(stmt.get());
     if (result != SQLITE_DONE) {
-      LOG_ERROR(quill::get_logger(), "Failed to execute update_by: {}", db_.error_message());
+      std::cerr << "ERROR: Failed to execute update_by: " << db_.error_message() << std::endl;
       return false;
     }
     return true;
@@ -163,13 +163,13 @@ public:
     auto const sql = generate_remove_by_sql(cond_col);
     auto stmt = db_.prepare(sql);
     if (stmt == nullptr) {
-      LOG_ERROR(quill::get_logger(), "Failed to prepare remove_by: {}", db_.error_message());
+      std::cerr << "ERROR: Failed to prepare remove_by: " << db_.error_message() << std::endl;
       return false;
     }
     bind_condition(stmt.get(), 1, cond_val);
     auto const result = sqlite3_step(stmt.get());
     if (result != SQLITE_DONE) {
-      LOG_ERROR(quill::get_logger(), "Failed to execute remove_by: {}", db_.error_message());
+      std::cerr << "ERROR: Failed to execute remove_by: " << db_.error_message() << std::endl;
       return false;
     }
     return true;
@@ -182,7 +182,7 @@ private:
    * @brief フィールド数を取得する
    */
   static constexpr auto field_count() -> size_t {
-    return glz::tuple_size_v<decltype(glz::meta<T>::value)>;
+    return glz::reflect<T>::size;
   }
 
   /**
@@ -190,15 +190,23 @@ private:
    */
   template <size_t I>
   static constexpr auto field_name_at() -> std::string_view {
-    return glz::get<I>(glz::meta<T>::value).first;
+    return glz::reflect<T>::keys[I];
   }
 
   /**
-   * @brief 指定インデックスのフィールド値を取得する
+   * @brief 指定インデックスのフィールド値を取得する（const 版）
    */
   template <size_t I>
   static auto field_value_at(const T& t) -> decltype(auto) {
-    return t.*(glz::get<I>(glz::meta<T>::value).second);
+    return t.*(glz::get<I>(glz::reflect<T>::values));
+  }
+
+  /**
+   * @brief 指定インデックスのフィールド値を取得する（mutable 版）
+   */
+  template <size_t I>
+  static auto field_value_at_mutable(T& t) -> decltype(auto) {
+    return t.*(glz::get<I>(glz::reflect<T>::values));
   }
 
   /**
@@ -330,8 +338,8 @@ private:
   static auto fetch_one(sqlite3_stmt* stmt) -> T {
     T record{};
     [&]<size_t... Is>(std::index_sequence<Is...>) {
-      ((field_value_at<Is>(record) =
-            sqlite_type_traits<std::remove_cvref_t<decltype(field_value_at<Is>(record))>>::column(
+      ((field_value_at_mutable<Is>(record) =
+            sqlite_type_traits<std::remove_cvref_t<decltype(field_value_at<Is>(std::declval<const T&>()))>>::column(
                 stmt, static_cast<int>(Is))),
        ...);
     }(std::make_index_sequence<field_count()>{});
