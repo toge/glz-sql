@@ -3,8 +3,8 @@
 #include "database.hpp"
 #include "sqlite_bind.hpp"
 
-#include <glaze/glaze.hpp>
 #include <format>
+#include <glaze/glaze.hpp>
 #include <iostream>
 #include <optional>
 #include <string>
@@ -31,13 +31,12 @@ concept sql_table = requires {
 template <typename T>
   requires sql_table<T>
 class sql_repository {
-public:
+  public:
   /**
    * @brief コンストラクタ。データベース接続を受け取る
    * @param db データベースインターフェースへの参照
    */
-  explicit sql_repository(database_interface& db)
-    : db_(db) {}
+  explicit sql_repository(database_interface& db) : db_(db) {}
 
   /**
    * @brief テーブルを作成する
@@ -58,8 +57,8 @@ public:
    * @return 成功 true / 失敗 false
    */
   auto insert(const T& record) const -> bool {
-    auto const sql = generate_insert_sql();
-    auto stmt = db_.prepare(sql);
+    auto const sql  = generate_insert_sql();
+    auto       stmt = db_.prepare(sql);
     if (stmt == nullptr) {
       std::cerr << "ERROR: Failed to prepare insert: " << db_.error_message() << std::endl;
       return false;
@@ -78,8 +77,8 @@ public:
    * @return レコードのベクタ（0件の場合は空ベクタ）
    */
   auto select_all() const -> std::vector<T> {
-    auto const sql = generate_select_all_sql();
-    auto stmt = db_.prepare(sql);
+    auto const sql  = generate_select_all_sql();
+    auto       stmt = db_.prepare(sql);
     if (stmt == nullptr) {
       std::cerr << "ERROR: Failed to prepare select_all: " << db_.error_message() << std::endl;
       return {};
@@ -95,8 +94,8 @@ public:
    */
   template <typename V>
   auto select_by(std::string_view column, const V& value) const -> std::vector<T> {
-    auto const sql = generate_select_by_sql(column);
-    auto stmt = db_.prepare(sql);
+    auto const sql  = generate_select_by_sql(column);
+    auto       stmt = db_.prepare(sql);
     if (stmt == nullptr) {
       std::cerr << "ERROR: Failed to prepare select_by: " << db_.error_message() << std::endl;
       return {};
@@ -113,8 +112,8 @@ public:
    */
   template <typename V>
   auto find_by(std::string_view column, const V& value) const -> std::optional<T> {
-    auto const sql = generate_select_by_sql(column);
-    auto stmt = db_.prepare(sql);
+    auto const sql  = generate_select_by_sql(column);
+    auto       stmt = db_.prepare(sql);
     if (stmt == nullptr) {
       std::cerr << "ERROR: Failed to prepare find_by: " << db_.error_message() << std::endl;
       return std::nullopt;
@@ -136,8 +135,8 @@ public:
    */
   template <typename V>
   auto update_by(const T& record, std::string_view cond_col, const V& cond_val) const -> bool {
-    auto const sql = generate_update_by_sql(cond_col);
-    auto stmt = db_.prepare(sql);
+    auto const sql  = generate_update_by_sql(cond_col);
+    auto       stmt = db_.prepare(sql);
     if (stmt == nullptr) {
       std::cerr << "ERROR: Failed to prepare update_by: " << db_.error_message() << std::endl;
       return false;
@@ -160,8 +159,8 @@ public:
    */
   template <typename V>
   auto remove_by(std::string_view cond_col, const V& cond_val) const -> bool {
-    auto const sql = generate_remove_by_sql(cond_col);
-    auto stmt = db_.prepare(sql);
+    auto const sql  = generate_remove_by_sql(cond_col);
+    auto       stmt = db_.prepare(sql);
     if (stmt == nullptr) {
       std::cerr << "ERROR: Failed to prepare remove_by: " << db_.error_message() << std::endl;
       return false;
@@ -175,15 +174,13 @@ public:
     return true;
   }
 
-private:
+  private:
   database_interface& db_;
 
   /**
    * @brief フィールド数を取得する
    */
-  static constexpr auto field_count() -> size_t {
-    return glz::reflect<T>::size;
-  }
+  static constexpr auto field_count() -> size_t { return glz::reflect<T>::size; }
 
   /**
    * @brief 指定インデックスのフィールド名を取得する
@@ -223,9 +220,7 @@ private:
    */
   static auto join_field_names() -> std::string {
     std::string result;
-    [&]<size_t... Is>(std::index_sequence<Is...>) {
-      ((result += std::string(field_name_at<Is>()), result += ","), ...);
-    }(std::make_index_sequence<field_count()>{});
+    [&]<size_t... Is>(std::index_sequence<Is...>) { ((result += std::string(field_name_at<Is>()), result += ","), ...); }(std::make_index_sequence<field_count()>{});
     if (!result.empty()) {
       result.pop_back();  // 末尾のカンマを除去
     }
@@ -263,32 +258,24 @@ private:
   /**
    * @brief INSERT 文を生成する
    */
-  static auto generate_insert_sql() -> std::string {
-    return std::format("INSERT INTO {} ({}) VALUES ({});", T::table_name, join_field_names(), placeholders());
-  }
+  static auto generate_insert_sql() -> std::string { return std::format("INSERT INTO {} ({}) VALUES ({});", T::table_name, join_field_names(), placeholders()); }
 
   /**
    * @brief SELECT ALL 文を生成する
    */
-  static auto generate_select_all_sql() -> std::string {
-    return std::format("SELECT {} FROM {};", join_field_names(), T::table_name);
-  }
+  static auto generate_select_all_sql() -> std::string { return std::format("SELECT {} FROM {};", join_field_names(), T::table_name); }
 
   /**
    * @brief SELECT WHERE 文を生成する
    */
-  static auto generate_select_by_sql(std::string_view column) -> std::string {
-    return std::format("SELECT {} FROM {} WHERE {} = ?;", join_field_names(), T::table_name, column);
-  }
+  static auto generate_select_by_sql(std::string_view column) -> std::string { return std::format("SELECT {} FROM {} WHERE {} = ?;", join_field_names(), T::table_name, column); }
 
   /**
    * @brief UPDATE WHERE 文を生成する
    */
   static auto generate_update_by_sql(std::string_view cond_col) -> std::string {
     std::string set_clause;
-    [&]<size_t... Is>(std::index_sequence<Is...>) {
-      ((set_clause += std::string(field_name_at<Is>()) + " = ?", set_clause += ","), ...);
-    }(std::make_index_sequence<field_count()>{});
+    [&]<size_t... Is>(std::index_sequence<Is...>) { ((set_clause += std::string(field_name_at<Is>()) + " = ?", set_clause += ","), ...); }(std::make_index_sequence<field_count()>{});
     if (!set_clause.empty()) {
       set_clause.pop_back();
     }
@@ -298,18 +285,14 @@ private:
   /**
    * @brief DELETE WHERE 文を生成する
    */
-  static auto generate_remove_by_sql(std::string_view column) -> std::string {
-    return std::format("DELETE FROM {} WHERE {} = ?;", T::table_name, column);
-  }
+  static auto generate_remove_by_sql(std::string_view column) -> std::string { return std::format("DELETE FROM {} WHERE {} = ?;", T::table_name, column); }
 
   /**
    * @brief プリペアドステートメントにフィールド値をバインドする
    */
   static void bind_fields(sqlite3_stmt* stmt, const T& record) {
     [&]<size_t... Is>(std::index_sequence<Is...>) {
-      ((sqlite_type_traits<std::remove_cvref_t<decltype(field_value_at<Is>(record))>>::bind(
-          stmt, static_cast<int>(Is + 1), field_value_at<Is>(record))),
-       ...);
+      ((sqlite_type_traits<std::remove_cvref_t<decltype(field_value_at<Is>(record))>>::bind(stmt, static_cast<int>(Is + 1), field_value_at<Is>(record))), ...);
     }(std::make_index_sequence<field_count()>{});
   }
 
@@ -338,10 +321,7 @@ private:
   static auto fetch_one(sqlite3_stmt* stmt) -> T {
     T record{};
     [&]<size_t... Is>(std::index_sequence<Is...>) {
-      ((field_value_at_mutable<Is>(record) =
-            sqlite_type_traits<std::remove_cvref_t<decltype(field_value_at<Is>(std::declval<const T&>()))>>::column(
-                stmt, static_cast<int>(Is))),
-       ...);
+      ((field_value_at_mutable<Is>(record) = sqlite_type_traits<std::remove_cvref_t<decltype(field_value_at<Is>(std::declval<const T&>()))>>::column(stmt, static_cast<int>(Is))), ...);
     }(std::make_index_sequence<field_count()>{});
     return record;
   }

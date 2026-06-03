@@ -26,13 +26,9 @@ template <>
 struct sqlite_type_traits<int64_t> {
   static constexpr const char* sql_type = "INTEGER";
 
-  static auto bind(sqlite3_stmt* stmt, int index, int64_t value) -> int {
-    return sqlite3_bind_int64(stmt, index, value);
-  }
+  static auto bind(sqlite3_stmt* stmt, int index, int64_t value) -> int { return sqlite3_bind_int64(stmt, index, value); }
 
-  static auto column(sqlite3_stmt* stmt, int index) -> int64_t {
-    return sqlite3_column_int64(stmt, index);
-  }
+  static auto column(sqlite3_stmt* stmt, int index) -> int64_t { return sqlite3_column_int64(stmt, index); }
 };
 
 /**
@@ -42,13 +38,9 @@ template <>
 struct sqlite_type_traits<double> {
   static constexpr const char* sql_type = "REAL";
 
-  static auto bind(sqlite3_stmt* stmt, int index, double value) -> int {
-    return sqlite3_bind_double(stmt, index, value);
-  }
+  static auto bind(sqlite3_stmt* stmt, int index, double value) -> int { return sqlite3_bind_double(stmt, index, value); }
 
-  static auto column(sqlite3_stmt* stmt, int index) -> double {
-    return sqlite3_column_double(stmt, index);
-  }
+  static auto column(sqlite3_stmt* stmt, int index) -> double { return sqlite3_column_double(stmt, index); }
 };
 
 /**
@@ -60,9 +52,7 @@ template <>
 struct sqlite_type_traits<std::string> {
   static constexpr const char* sql_type = "TEXT";
 
-  static auto bind(sqlite3_stmt* stmt, int index, const std::string& value) -> int {
-    return sqlite3_bind_text(stmt, index, value.c_str(), static_cast<int>(value.size()), SQLITE_TRANSIENT);
-  }
+  static auto bind(sqlite3_stmt* stmt, int index, const std::string& value) -> int { return sqlite3_bind_text(stmt, index, value.c_str(), static_cast<int>(value.size()), SQLITE_TRANSIENT); }
 
   static auto column(sqlite3_stmt* stmt, int index) -> std::string {
     auto const* text = sqlite3_column_text(stmt, index);
@@ -80,9 +70,7 @@ template <>
 struct sqlite_type_traits<const char*> {
   static constexpr const char* sql_type = "TEXT";
 
-  static auto bind(sqlite3_stmt* stmt, int index, const char* value) -> int {
-    return sqlite3_bind_text(stmt, index, value, -1, SQLITE_TRANSIENT);
-  }
+  static auto bind(sqlite3_stmt* stmt, int index, const char* value) -> int { return sqlite3_bind_text(stmt, index, value, -1, SQLITE_TRANSIENT); }
 
   static auto column(sqlite3_stmt* stmt, int index) -> const char* {
     auto const* text = sqlite3_column_text(stmt, index);
@@ -97,9 +85,7 @@ template <size_t N>
 struct sqlite_type_traits<char[N]> {
   static constexpr const char* sql_type = "TEXT";
 
-  static auto bind(sqlite3_stmt* stmt, int index, const char (&value)[N]) -> int {
-    return sqlite3_bind_text(stmt, index, value, static_cast<int>(N - 1), SQLITE_TRANSIENT);
-  }
+  static auto bind(sqlite3_stmt* stmt, int index, const char (&value)[N]) -> int { return sqlite3_bind_text(stmt, index, value, static_cast<int>(N - 1), SQLITE_TRANSIENT); }
 
   static auto column(sqlite3_stmt* stmt, int index) -> std::string {
     auto const* text = sqlite3_column_text(stmt, index);
@@ -117,9 +103,7 @@ template <>
 struct sqlite_type_traits<std::string_view> {
   static constexpr const char* sql_type = "TEXT";
 
-  static auto bind(sqlite3_stmt* stmt, int index, std::string_view value) -> int {
-    return sqlite3_bind_text(stmt, index, value.data(), static_cast<int>(value.size()), SQLITE_TRANSIENT);
-  }
+  static auto bind(sqlite3_stmt* stmt, int index, std::string_view value) -> int { return sqlite3_bind_text(stmt, index, value.data(), static_cast<int>(value.size()), SQLITE_TRANSIENT); }
 
   static auto column(sqlite3_stmt* stmt, int index) -> std::string_view {
     auto const* text = sqlite3_column_text(stmt, index);

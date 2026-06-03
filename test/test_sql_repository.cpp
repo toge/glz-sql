@@ -4,38 +4,40 @@
 #include "catch2/catch_all.hpp"
 
 struct User {
-  int64_t id{};
-  std::string name;
-  double score{};
+  int64_t                           id{};
+  std::string                       name;
+  double                            score{};
   static constexpr std::string_view table_name = "users";
 };
 
-template <> struct glz::meta<User> {
-  using type = User;
+template <>
+struct glz::meta<User> {
+  using type                  = User;
   static constexpr auto value = object("id", &User::id, "name", &User::name, "score", &User::score);
 };
 
 struct Product {
-  int64_t id{};
-  std::string name;
-  double price{};
+  int64_t                           id{};
+  std::string                       name;
+  double                            price{};
   static constexpr std::string_view table_name = "products";
 };
 
-template <> struct glz::meta<Product> {
-  using type = Product;
+template <>
+struct glz::meta<Product> {
+  using type                  = Product;
   static constexpr auto value = object("id", &Product::id, "name", &Product::name, "price", &Product::price);
 };
 
 TEST_CASE("sql_repository: create_table") {
-  glz_sql::sqlite_database db(":memory:");
+  glz_sql::sqlite_database      db(":memory:");
   glz_sql::sql_repository<User> repo(db);
 
   REQUIRE(repo.create_table());
 }
 
 TEST_CASE("sql_repository: insert and select_all") {
-  glz_sql::sqlite_database db(":memory:");
+  glz_sql::sqlite_database      db(":memory:");
   glz_sql::sql_repository<User> repo(db);
   repo.create_table();
 
@@ -53,7 +55,7 @@ TEST_CASE("sql_repository: insert and select_all") {
 }
 
 TEST_CASE("sql_repository: find_by") {
-  glz_sql::sqlite_database db(":memory:");
+  glz_sql::sqlite_database      db(":memory:");
   glz_sql::sql_repository<User> repo(db);
   repo.create_table();
 
@@ -71,7 +73,7 @@ TEST_CASE("sql_repository: find_by") {
 }
 
 TEST_CASE("sql_repository: select_by") {
-  glz_sql::sqlite_database db(":memory:");
+  glz_sql::sqlite_database      db(":memory:");
   glz_sql::sql_repository<User> repo(db);
   repo.create_table();
 
@@ -84,7 +86,7 @@ TEST_CASE("sql_repository: select_by") {
 }
 
 TEST_CASE("sql_repository: update_by") {
-  glz_sql::sqlite_database db(":memory:");
+  glz_sql::sqlite_database      db(":memory:");
   glz_sql::sql_repository<User> repo(db);
   repo.create_table();
 
@@ -98,7 +100,7 @@ TEST_CASE("sql_repository: update_by") {
 }
 
 TEST_CASE("sql_repository: remove_by") {
-  glz_sql::sqlite_database db(":memory:");
+  glz_sql::sqlite_database      db(":memory:");
   glz_sql::sql_repository<User> repo(db);
   repo.create_table();
 
@@ -113,8 +115,8 @@ TEST_CASE("sql_repository: remove_by") {
 }
 
 TEST_CASE("sql_repository: multiple tables") {
-  glz_sql::sqlite_database db(":memory:");
-  glz_sql::sql_repository<User> user_repo(db);
+  glz_sql::sqlite_database         db(":memory:");
+  glz_sql::sql_repository<User>    user_repo(db);
   glz_sql::sql_repository<Product> product_repo(db);
 
   user_repo.create_table();
@@ -123,7 +125,7 @@ TEST_CASE("sql_repository: multiple tables") {
   user_repo.insert(User{.id = 1, .name = "Alice", .score = 95.5});
   product_repo.insert(Product{.id = 1, .name = "Widget", .price = 9.99});
 
-  auto users = user_repo.select_all();
+  auto users    = user_repo.select_all();
   auto products = product_repo.select_all();
 
   REQUIRE(users.size() == 1);
