@@ -90,7 +90,7 @@ public:
    * @brief SQL文を実行する
    */
   auto execute(std::string_view sql) -> bool override {
-    auto* char_msg = nullptr;
+    char* char_msg = nullptr;
     auto const result = sqlite3_exec(db_, sql.data(), nullptr, nullptr, &char_msg);
     if (result != SQLITE_OK) {
       if (char_msg != nullptr) {
