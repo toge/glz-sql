@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(glaze-sql LANGUAGES CXX)
+project(glaze-sql VERSION 1.0.0 LANGUAGES CXX)
 
 option(ENABLE_TESTS "Enable tests" ON)
 
@@ -71,21 +71,57 @@ find_package(glaze REQUIRED CONFIG)
 find_package(SQLite3 REQUIRED)
 find_package(quill CONFIG REQUIRED)
 
+add_library(glaze-sql INTERFACE)
+add_library(glaze-sql::glaze-sql ALIAS glaze-sql)
+
+target_include_directories(glaze-sql INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+)
+
+target_compile_features(glaze-sql INTERFACE ${STD_CPP})
+
+target_link_libraries(glaze-sql INTERFACE
+    glaze::glaze
+    SQLite3::SQLite3
+)
+
 if(ENABLE_TESTS)
     enable_testing()
     add_subdirectory(test)
 endif()
 
-foreach(idx RANGE 1 100)
-    if(idx LESS 10)
-        set(idx "0${idx}")
-    endif()
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
 
-    if(EXISTS "${CMAKE_SOURCE_DIR}/test${idx}.cpp")
-        add_executable(test${idx} test${idx}.cpp)
-        target_link_libraries(test${idx} PRIVATE
-            glaze::glaze
-        )
-        target_compile_features(test${idx} PRIVATE ${STD_CPP})
-    endif()
-endforeach()
+install(TARGETS glaze-sql
+    EXPORT glaze-sql-targets
+)
+
+install(DIRECTORY include/glz-sql
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+install(EXPORT glaze-sql-targets
+    FILE glaze-sql-targets.cmake
+    NAMESPACE glaze-sql::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/glaze-sql
+)
+
+configure_package_config_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/glaze-sql-config.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/glaze-sql-config.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/glaze-sql
+)
+
+write_basic_package_version_file(
+    ${CMAKE_CURRENT_BINARY_DIR}/glaze-sql-config-version.cmake
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/glaze-sql-config.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/glaze-sql-config-version.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/glaze-sql
+)
