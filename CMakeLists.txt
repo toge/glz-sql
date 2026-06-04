@@ -69,19 +69,18 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(glaze REQUIRED CONFIG)
 find_package(SQLite3 REQUIRED)
-find_package(quill CONFIG REQUIRED)
 
-add_library(glaze-sql INTERFACE)
-add_library(glaze-sql::glaze-sql ALIAS glaze-sql)
+add_library(glz-sql INTERFACE)
+add_library(glz-sql::glz-sql ALIAS glz-sql)
 
-target_include_directories(glaze-sql INTERFACE
+target_include_directories(glz-sql INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
 )
 
-target_compile_features(glaze-sql INTERFACE ${STD_CPP})
+target_compile_features(glz-sql INTERFACE ${STD_CPP})
 
-target_link_libraries(glaze-sql INTERFACE
+target_link_libraries(glz-sql INTERFACE
     glaze::glaze
     SQLite3::SQLite3
 )
@@ -94,34 +93,34 @@ endif()
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
-install(TARGETS glaze-sql
-    EXPORT glaze-sql-targets
+install(TARGETS glz-sql
+    EXPORT glz-sql-targets
 )
 
 install(DIRECTORY include/glz-sql
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
-install(EXPORT glaze-sql-targets
-    FILE glaze-sql-targets.cmake
-    NAMESPACE glaze-sql::
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/glaze-sql
+install(EXPORT glz-sql-targets
+    FILE glz-sql-targets.cmake
+    NAMESPACE glz-sql::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/glz-sql
 )
 
 configure_package_config_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/glaze-sql-config.cmake.in
-    ${CMAKE_CURRENT_BINARY_DIR}/glaze-sql-config.cmake
-    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/glaze-sql
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/glz-sql-config.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/glz-sql-config.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/glz-sql
 )
 
 write_basic_package_version_file(
-    ${CMAKE_CURRENT_BINARY_DIR}/glaze-sql-config-version.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/glz-sql-config-version.cmake
     VERSION ${PROJECT_VERSION}
     COMPATIBILITY SameMajorVersion
 )
 
 install(FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/glaze-sql-config.cmake
-    ${CMAKE_CURRENT_BINARY_DIR}/glaze-sql-config-version.cmake
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/glaze-sql
+    ${CMAKE_CURRENT_BINARY_DIR}/glz-sql-config.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/glz-sql-config-version.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/glz-sql
 )
