@@ -213,3 +213,11 @@ TEST_CASE("condition: AND composition") {
   REQUIRE(c.fragment() == "(age > ?) AND (name = ?)");
   REQUIRE(c.placeholder_count() == 2);
 }
+
+TEST_CASE("condition: AND chain") {
+  using namespace glz_sql;
+  auto c = where_gt<"age">(int64_t{18}) && where_eq<"name">(std::string{"Alice"})
+    && where_lt<"age">(int64_t{65});
+  REQUIRE(c.fragment() == "((age > ?) AND (name = ?)) AND (age < ?)");
+  REQUIRE(c.placeholder_count() == 3);
+}
