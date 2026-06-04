@@ -470,3 +470,14 @@ TEST_CASE("sql_repository: update_by with IN") {
   REQUIRE(a2.has_value());
   REQUIRE(a2->score == 2.0);  // 未更新
 }
+
+TEST_CASE("condition: compile-time invalid column") {
+  using namespace glz_sql;
+  // 以下の行のコメントを外すとコンパイルエラーになる
+  // auto bad = where_eq<"invalid_column">(std::string{"x"});
+  // static_assert(!valid_condition<decltype(bad), User>);
+
+  static_assert(valid_condition<decltype(where_eq<"name">(std::string{"x"})), User>);
+  static_assert(valid_condition<decltype(where_eq<"id">(int64_t{1})), User>);
+  SUCCEED("compile-time column validation works");
+}
