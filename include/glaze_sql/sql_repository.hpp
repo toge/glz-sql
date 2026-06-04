@@ -122,21 +122,19 @@ class sql_repository {
   }
 
   /**
-   * @brief 指定カラムで条件検索する（1件）
-   * @tparam Column 条件カラム名（コンパイル時定数）
-   * @param value 条件値
-   * @return レコード（見つからない場合は std::nullopt）
+   * @brief 条件式で 1 件検索する
    */
-  template <fixed_string Column, typename V>
-    requires valid_column<Column, T>
-  auto find_by(const V& value) const -> std::optional<T> {
-    auto const sql  = generate_select_by_sql(std::string_view(Column));
+  template <typename Cond>
+    requires valid_condition<Cond, T>
+  auto find_by(const Cond& cond) const -> std::optional<T> {
+    auto const sql  = std::format("SELECT {} FROM {} WHERE {};",
+                                  join_field_names(), T::table_name, cond.fragment());
     auto       stmt = db_.prepare(sql);
     if (stmt == nullptr) {
       std::cerr << "ERROR: Failed to prepare find_by: " << db_.error_message() << std::endl;
       return std::nullopt;
     }
-    bind_condition(stmt.get(), 1, value);
+    cond.bind(stmt.get(), 1);
     auto const result = sqlite3_step(stmt.get());
     if (result != SQLITE_ROW) {
       return std::nullopt;
