@@ -41,7 +41,7 @@ TEST_CASE("sql_repository: create_table") {
   REQUIRE(repo.create_table());
 }
 
-TEST_CASE("sql_repository: insert and select_all") {
+TEST_CASE("sql_repository: insert and select_all_vec") {
   glz_sql::sqlite_database      db(":memory:");
   glz_sql::sql_repository<User> repo(db);
   repo.create_table();
@@ -49,7 +49,7 @@ TEST_CASE("sql_repository: insert and select_all") {
   repo.insert(User{.id = 1, .name = "Alice", .score = 95.5});
   repo.insert(User{.id = 2, .name = "Bob", .score = 87.3});
 
-  auto all = repo.select_all();
+  auto all = repo.select_all_vec();
   REQUIRE(all.size() == 2);
   REQUIRE(all[0].id == 1);
   REQUIRE(all[0].name == "Alice");
@@ -57,6 +57,24 @@ TEST_CASE("sql_repository: insert and select_all") {
   REQUIRE(all[1].id == 2);
   REQUIRE(all[1].name == "Bob");
   REQUIRE(all[1].score == 87.3);
+}
+
+TEST_CASE("sql_repository: select_all iterator") {
+  glz_sql::sqlite_database      db(":memory:");
+  glz_sql::sql_repository<User> repo(db);
+  repo.create_table();
+
+  User user1{.id = 1, .name = "Alice", .age = 25};
+  User user2{.id = 2, .name = "Bob", .age = 30};
+  repo.insert(user1);
+  repo.insert(user2);
+
+  auto [it, end] = repo.select_all();
+  int  count     = 0;
+  for (; it != end; ++it) {
+    count++;
+  }
+  REQUIRE(count == 2);
 }
 
 TEST_CASE("sql_repository: find_by single condition") {
@@ -112,7 +130,7 @@ TEST_CASE("sql_repository: remove_by single condition") {
 
   repo.remove_by(glz_sql::where_eq<"name">(std::string{"Bob"}));
 
-  auto all = repo.select_all();
+  auto all = repo.select_all_vec();
   REQUIRE(all.size() == 1);
   REQUIRE(all[0].name == "Alice");
 }
@@ -128,8 +146,8 @@ TEST_CASE("sql_repository: multiple tables") {
   user_repo.insert(User{.id = 1, .name = "Alice", .score = 95.5});
   product_repo.insert(Product{.id = 1, .name = "Widget", .price = 9.99});
 
-  auto users    = user_repo.select_all();
-  auto products = product_repo.select_all();
+  auto users    = user_repo.select_all_vec();
+  auto products = product_repo.select_all_vec();
 
   REQUIRE(users.size() == 1);
   REQUIRE(products.size() == 1);
@@ -425,7 +443,7 @@ TEST_CASE("sql_repository: remove_by with multiple conditions") {
   // name=Alice OR name=Bob
   repo.remove_by(glz_sql::where_eq<"name">(std::string{"Alice"}) || glz_sql::where_eq<"name">(std::string{"Bob"}));
 
-  auto all = repo.select_all();
+  auto all = repo.select_all_vec();
   REQUIRE(all.size() == 0);
 }
 

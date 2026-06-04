@@ -193,14 +193,23 @@ class sql_repository {
   }
 
   /**
-   * @brief 全件検索する
+   * @brief 全件検索する（iterator版）
+   * @return iteratorとsentinelのペア
+   */
+  auto select_all() const -> std::pair<sql_iterator<T>, sql_sentinel> {
+    auto const sql = generate_select_all_sql();
+    return {sql_iterator<T>(db_, sql), sql_sentinel{}};
+  }
+
+  /**
+   * @brief 全件検索する（vector版）
    * @return レコードのベクタ（0件の場合は空ベクタ）
    */
-  auto select_all() const -> std::vector<T> {
+  auto select_all_vec() const -> std::vector<T> {
     auto const sql  = generate_select_all_sql();
     auto       stmt = db_.prepare(sql);
     if (stmt == nullptr) {
-      std::cerr << "ERROR: Failed to prepare select_all: " << db_.error_message() << std::endl;
+      std::cerr << "ERROR: Failed to prepare select_all: " << db_.error_message() << '\n';
       return {};
     }
     return fetch_all(stmt.get());
