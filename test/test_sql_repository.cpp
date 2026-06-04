@@ -1,6 +1,6 @@
-#include "glaze_sql/condition.hpp"
-#include "glaze_sql/database.hpp"
-#include "glaze_sql/sql_repository.hpp"
+#include "glz-sql/condition.hpp"
+#include "glz-sql/database.hpp"
+#include "glz-sql/sql_repository.hpp"
 
 #include "catch2/catch_all.hpp"
 
@@ -458,4 +458,10 @@ TEST_CASE("condition: compile-time invalid column") {
   static_assert(valid_condition<decltype(where_eq<"name">(std::string{"x"})), User>);
   static_assert(valid_condition<decltype(where_eq<"id">(int64_t{1})), User>);
   SUCCEED("compile-time column validation works");
+}
+
+TEST_CASE("sql_sentinel basic operations") {
+  glz_sql::sql_sentinel sentinel;
+  glz_sql::sql_sentinel sentinel2;
+  REQUIRE(sentinel == sentinel2);
 }
