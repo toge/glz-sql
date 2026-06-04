@@ -1,6 +1,7 @@
 #pragma once
 
 #include <sqlite3.h>
+#include <optional>
 #include <string>
 #include <type_traits>
 
@@ -111,6 +112,30 @@ struct sqlite_type_traits<std::string_view> {
       return {};
     }
     return std::string_view(reinterpret_cast<const char*>(text), static_cast<size_t>(sqlite3_column_bytes(stmt, index)));
+  }
+};
+
+/**
+ * @brief std::optional<T> の特殊化: NULL 許容カラム用
+ *
+ * std::nullopt を NULL として bind し、SQLite からの NULL を std::nullopt として読み取る。
+ */
+template <typename T>
+struct sqlite_type_traits<std::optional<T>> {
+  static constexpr const char* sql_type = sqlite_type_traits<T>::sql_type;
+
+  static auto bind(sqlite3_stmt* stmt, int index, const std::optional<T>& value) -> int {
+    if (!value.has_value()) {
+      return sqlite3_bind_null(stmt, index);
+    }
+    return sqlite_type_traits<T>::bind(stmt, index, *value);
+  }
+
+  static auto column(sqlite3_stmt* stmt, int index) -> std::optional<T> {
+    if (sqlite3_column_type(stmt, index) == SQLITE_NULL) {
+      return std::nullopt;
+    }
+    return sqlite_type_traits<T>::column(stmt, index);
   }
 };
 
