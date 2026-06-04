@@ -5,16 +5,24 @@
 #include "catch2/catch_all.hpp"
 
 struct User {
-  int64_t                           id{};
-  std::string                       name;
-  double                            score{};
-  static constexpr std::string_view table_name = "users";
+  int64_t                                id{};
+  std::optional<std::string>             email;
+  std::string                            name;
+  int64_t                                age{};
+  double                                 score{};
+  static constexpr std::string_view      table_name = "users";
 };
 
 template <>
 struct glz::meta<User> {
   using type                  = User;
-  static constexpr auto value = object("id", &User::id, "name", &User::name, "score", &User::score);
+  static constexpr auto value = object(
+    "id", &User::id,
+    "email", &User::email,
+    "name", &User::name,
+    "age", &User::age,
+    "score", &User::score
+  );
 };
 
 struct Product {
@@ -312,4 +320,61 @@ TEST_CASE("sql_repository: select_by with AND + OR precedence") {
     || (glz_sql::where_eq<"name">(std::string{"Bob"}) && glz_sql::where_gt<"score">(90.0))
   );
   REQUIRE(results.size() == 2);
+}
+
+TEST_CASE("sql_repository: select_by with IN") {
+  glz_sql::sqlite_database      db(":memory:");
+  glz_sql::sql_repository<User> repo(db);
+  repo.create_table();
+
+  repo.insert(User{.id = 1, .name = "A", .age = 10, .score = 1.0});
+  repo.insert(User{.id = 2, .name = "B", .age = 20, .score = 2.0});
+  repo.insert(User{.id = 3, .name = "C", .age = 30, .score = 3.0});
+
+  auto results = repo.select_by(glz_sql::where_in<"id">(int64_t{1}, int64_t{3}));
+  REQUIRE(results.size() == 2);
+}
+
+TEST_CASE("sql_repository: select_by with BETWEEN") {
+  glz_sql::sqlite_database      db(":memory:");
+  glz_sql::sql_repository<User> repo(db);
+  repo.create_table();
+
+  repo.insert(User{.id = 1, .name = "A", .age = 10, .score = 1.0});
+  repo.insert(User{.id = 2, .name = "B", .age = 20, .score = 2.0});
+  repo.insert(User{.id = 3, .name = "C", .age = 30, .score = 3.0});
+
+  auto results = repo.select_by(glz_sql::where_between<"age">(int64_t{15}, int64_t{25}));
+  REQUIRE(results.size() == 1);
+  REQUIRE(results[0].id == 2);
+}
+
+TEST_CASE("sql_repository: select_by with LIKE") {
+  glz_sql::sqlite_database      db(":memory:");
+  glz_sql::sql_repository<User> repo(db);
+  repo.create_table();
+
+  repo.insert(User{.id = 1, .name = "Alice", .score = 1.0});
+  repo.insert(User{.id = 2, .name = "Bob",   .score = 2.0});
+  repo.insert(User{.id = 3, .name = "Alex",  .score = 3.0});
+
+  auto results = repo.select_by(glz_sql::where_like<"name">(std::string{"Al%"}));
+  REQUIRE(results.size() == 2);
+}
+
+TEST_CASE("sql_repository: select_by with IS NULL") {
+  glz_sql::sqlite_database      db(":memory:");
+  glz_sql::sql_repository<User> repo(db);
+  repo.create_table();
+
+  repo.insert(User{.id = 1, .email = std::string{"a@x"}, .name = "A", .score = 1.0});
+  repo.insert(User{.id = 2, .email = std::nullopt,        .name = "B", .score = 2.0});
+
+  auto no_email = repo.select_by(glz_sql::where_is_null<"email">());
+  REQUIRE(no_email.size() == 1);
+  REQUIRE(no_email[0].id == 2);
+
+  auto has_email = repo.select_by(glz_sql::where_is_not_null<"email">());
+  REQUIRE(has_email.size() == 1);
+  REQUIRE(has_email[0].id == 1);
 }
