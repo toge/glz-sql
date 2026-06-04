@@ -378,3 +378,95 @@ TEST_CASE("sql_repository: select_by with IS NULL") {
   REQUIRE(has_email.size() == 1);
   REQUIRE(has_email[0].id == 1);
 }
+
+TEST_CASE("sql_repository: update_by with multiple conditions") {
+  glz_sql::sqlite_database      db(":memory:");
+  glz_sql::sql_repository<User> repo(db);
+  repo.create_table();
+
+  repo.insert(User{.id = 1, .name = "Alice", .age = 20, .score = 1.0});
+  repo.insert(User{.id = 2, .name = "Alice", .age = 30, .score = 2.0});
+  repo.insert(User{.id = 3, .name = "Bob",   .age = 25, .score = 3.0});
+
+  // name=Alice AND age<25 のみ更新
+  repo.update_by(User{.id = 1, .name = "Alice", .age = 20, .score = 999.0},
+                 glz_sql::where_eq<"name">(std::string{"Alice"}) && glz_sql::where_lt<"age">(int64_t{25}));
+
+  auto a1 = repo.find_by(glz_sql::where_eq<"id">(int64_t{1}));
+  REQUIRE(a1.has_value());
+  REQUIRE(a1->score == 999.0);
+
+  auto a2 = repo.find_by(glz_sql::where_eq<"id">(int64_t{2}));
+  REQUIRE(a2.has_value());
+  REQUIRE(a2->score == 2.0);  // 変更されていない
+}
+
+TEST_CASE("sql_repository: update_by bind order (SET then WHERE)") {
+  glz_sql::sqlite_database      db(":memory:");
+  glz_sql::sql_repository<User> repo(db);
+  repo.create_table();
+
+  repo.insert(User{.id = 1, .name = "Alice", .age = 20, .score = 1.0});
+  repo.insert(User{.id = 2, .name = "Bob",   .age = 30, .score = 2.0});
+
+  // ヒット対象は id=2 のみ。SET 句に id=99 を指定しても WHERE 句で id=2 に絞られる。
+  // → バインド順が正しければ SET 値が id=2 の行に適用され、id=1 は無変更。
+  //   SET で id=99, name="Updated" などが適用された結果は id=99 で検索できる。
+  repo.update_by(User{.id = 99, .name = "Updated", .age = 99, .score = 100.0},
+                 glz_sql::where_eq<"id">(int64_t{2}));
+
+  auto updated = repo.find_by(glz_sql::where_eq<"id">(int64_t{99}));
+  REQUIRE(updated.has_value());
+  REQUIRE(updated->name == "Updated");
+  REQUIRE(updated->age == 99);
+  REQUIRE(updated->score == 100.0);
+
+  // id=2 はもう存在しない（SET で id=99 に更新された）
+  auto old_id = repo.find_by(glz_sql::where_eq<"id">(int64_t{2}));
+  REQUIRE_FALSE(old_id.has_value());
+
+  // id=1 は影響を受けない
+  auto unchanged = repo.find_by(glz_sql::where_eq<"id">(int64_t{1}));
+  REQUIRE(unchanged.has_value());
+  REQUIRE(unchanged->score == 1.0);
+}
+
+TEST_CASE("sql_repository: remove_by with multiple conditions") {
+  glz_sql::sqlite_database      db(":memory:");
+  glz_sql::sql_repository<User> repo(db);
+  repo.create_table();
+
+  repo.insert(User{.id = 1, .name = "Alice", .age = 20, .score = 1.0});
+  repo.insert(User{.id = 2, .name = "Alice", .age = 30, .score = 2.0});
+  repo.insert(User{.id = 3, .name = "Bob",   .age = 25, .score = 3.0});
+
+  // name=Alice OR name=Bob
+  repo.remove_by(glz_sql::where_eq<"name">(std::string{"Alice"})
+                 || glz_sql::where_eq<"name">(std::string{"Bob"}));
+
+  auto all = repo.select_all();
+  REQUIRE(all.size() == 0);
+}
+
+TEST_CASE("sql_repository: update_by with IN") {
+  glz_sql::sqlite_database      db(":memory:");
+  glz_sql::sql_repository<User> repo(db);
+  repo.create_table();
+
+  repo.insert(User{.id = 1, .name = "A", .score = 1.0});
+  repo.insert(User{.id = 2, .name = "B", .score = 2.0});
+  repo.insert(User{.id = 3, .name = "C", .score = 3.0});
+
+  repo.update_by(User{.id = 1, .name = "A", .score = 0.0},
+                 glz_sql::where_in<"id">(int64_t{1}, int64_t{3}));
+
+  auto a1 = repo.find_by(glz_sql::where_eq<"id">(int64_t{1}));
+  auto a3 = repo.find_by(glz_sql::where_eq<"id">(int64_t{3}));
+  auto a2 = repo.find_by(glz_sql::where_eq<"id">(int64_t{2}));
+  REQUIRE(a1.has_value());
+  REQUIRE(a1->score == 0.0);
+  // id=3 の行は SET 句で id=1 に更新されたので、id=3 では見つからない
+  REQUIRE_FALSE(a3.has_value());
+  REQUIRE(a2.has_value());
+  REQUIRE(a2->score == 2.0);  // 未更新
+}
