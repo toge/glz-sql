@@ -49,7 +49,66 @@ class leaf_condition;
  * @brief 合成条件の前方宣言
  */
 template <compare_op Op, typename L, typename R>
+  requires (Op == compare_op::and_op || Op == compare_op::or_op)
 class composite_condition;
+
+/**
+ * @brief 合成条件 (AND / OR)
+ */
+template <compare_op Op, typename L, typename R>
+  requires (Op == compare_op::and_op || Op == compare_op::or_op)
+class composite_condition {
+  L left_;
+  R right_;
+
+public:
+  using is_composite_condition_tag = void;
+  using left_type                  = L;
+  using right_type                 = R;
+
+  constexpr composite_condition(L l, R r) : left_(std::move(l)), right_(std::move(r)) {}
+
+  /**
+   * @brief プレースホルダ数 (左右の葉の合計)
+   */
+  static constexpr auto placeholder_count() -> size_t {
+    return L::placeholder_count() + R::placeholder_count();
+  }
+
+  /**
+   * @brief SQL フラグメント
+   */
+  auto fragment() const -> std::string {
+    if constexpr (Op == compare_op::and_op) {
+      return std::format("({}) AND ({})", left_.fragment(), right_.fragment());
+    } else {
+      return std::format("({}) OR ({})", left_.fragment(), right_.fragment());
+    }
+  }
+
+  /**
+   * @brief バインド
+   */
+  auto bind(sqlite3_stmt* stmt, int start_index) const -> int {
+    int idx = left_.bind(stmt, start_index);
+    return right_.bind(stmt, idx);
+  }
+};
+
+/**
+ * @brief AND 演算子 (leaf + leaf)
+ */
+template <compare_op LOp, fixed_string LC, typename LV, typename LV2,
+          compare_op ROp, fixed_string RC, typename RV, typename RV2>
+auto operator&&(const leaf_condition<LOp, LC, LV, LV2>& l,
+                const leaf_condition<ROp, RC, RV, RV2>& r)
+    -> composite_condition<compare_op::and_op,
+                           leaf_condition<LOp, LC, LV, LV2>,
+                           leaf_condition<ROp, RC, RV, RV2>> {
+  return composite_condition<compare_op::and_op,
+                             leaf_condition<LOp, LC, LV, LV2>,
+                             leaf_condition<ROp, RC, RV, RV2>>(l, r);
+}
 
 /**
  * @brief 任意の condition 型 (葉または合成) であることを判定するコンセプト

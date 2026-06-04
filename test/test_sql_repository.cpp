@@ -206,3 +206,10 @@ TEST_CASE("condition: is_null / is_not_null") {
   REQUIRE((where_is_not_null<"email">().fragment()) == "email IS NOT NULL");
   REQUIRE(where_is_not_null<"email">().placeholder_count() == 0);
 }
+
+TEST_CASE("condition: AND composition") {
+  using namespace glz_sql;
+  auto c = where_gt<"age">(int64_t{18}) && where_eq<"name">(std::string{"Alice"});
+  REQUIRE(c.fragment() == "(age > ?) AND (name = ?)");
+  REQUIRE(c.placeholder_count() == 2);
+}
