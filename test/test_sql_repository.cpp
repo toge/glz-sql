@@ -198,3 +198,11 @@ TEST_CASE("condition: where_between") {
   REQUIRE(c.fragment() == "age BETWEEN ? AND ?");
   REQUIRE(c.placeholder_count() == 2);
 }
+
+TEST_CASE("condition: is_null / is_not_null") {
+  using namespace glz_sql;
+  REQUIRE((where_is_null<"email">().fragment()) == "email IS NULL");
+  REQUIRE(where_is_null<"email">().placeholder_count() == 0);
+  REQUIRE((where_is_not_null<"email">().fragment()) == "email IS NOT NULL");
+  REQUIRE(where_is_not_null<"email">().placeholder_count() == 0);
+}

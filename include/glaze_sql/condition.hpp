@@ -260,4 +260,20 @@ auto where_between(V lo, V hi) -> leaf_condition<compare_op::between, C, std::de
   return leaf_condition<compare_op::between, C, std::decay_t<V>, std::decay_t<V>>(std::move(lo), std::move(hi));
 }
 
+/**
+ * @brief IS NULL
+ */
+template <fixed_string C>
+auto where_is_null() -> leaf_condition<compare_op::is_null, C> {
+  return leaf_condition<compare_op::is_null, C>();
+}
+
+/**
+ * @brief IS NOT NULL
+ */
+template <fixed_string C>
+auto where_is_not_null() -> leaf_condition<compare_op::is_not_null, C> {
+  return leaf_condition<compare_op::is_not_null, C>();
+}
+
 }  // namespace glz_sql
