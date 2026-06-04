@@ -216,13 +216,25 @@ class sql_repository {
   }
 
   /**
-   * @brief 条件式で検索する（複数件）
+   * @brief 条件式で検索する（iterator版）
+   * @param cond 条件式 (where_* の合成)
+   * @return iteratorとsentinelのペア
+   */
+  template <typename Cond>
+    requires valid_condition<Cond, T>
+  auto select_by(const Cond& cond) const -> std::pair<sql_iterator<T>, sql_sentinel> {
+    auto const sql = std::format("SELECT {} FROM {} WHERE {};", join_field_names(), T::table_name, cond.fragment());
+    return {sql_iterator<T>(db_, sql, cond), sql_sentinel{}};
+  }
+
+  /**
+   * @brief 条件式で検索する（vector版）
    * @param cond 条件式 (where_* の合成)
    * @return レコードのベクタ
    */
   template <typename Cond>
     requires valid_condition<Cond, T>
-  auto select_by(const Cond& cond) const -> std::vector<T> {
+  auto select_by_vec(const Cond& cond) const -> std::vector<T> {
     auto const sql  = std::format("SELECT {} FROM {} WHERE {};", join_field_names(), T::table_name, cond.fragment());
     auto       stmt = db_.prepare(sql);
     if (stmt == nullptr) {

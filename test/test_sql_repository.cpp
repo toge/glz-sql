@@ -102,7 +102,7 @@ TEST_CASE("sql_repository: select_by single condition") {
   repo.insert(User{.id = 2, .name = "Bob", .score = 87.3});
   repo.insert(User{.id = 3, .name = "Alice", .score = 92.0});
 
-  auto alices = repo.select_by(glz_sql::where_eq<"name">(std::string{"Alice"}));
+  auto alices = repo.select_by_vec(glz_sql::where_eq<"name">(std::string{"Alice"}));
   REQUIRE(alices.size() == 2);
 }
 
@@ -291,7 +291,7 @@ TEST_CASE("sql_repository: select_by with AND") {
   repo.insert(User{.id = 2, .name = "Alice", .score = 80.0});
   repo.insert(User{.id = 3, .name = "Bob", .score = 70.0});
 
-  auto results = repo.select_by(glz_sql::where_eq<"name">(std::string{"Alice"}) && glz_sql::where_gt<"score">(90.0));
+  auto results = repo.select_by_vec(glz_sql::where_eq<"name">(std::string{"Alice"}) && glz_sql::where_gt<"score">(90.0));
   REQUIRE(results.size() == 1);
   REQUIRE(results[0].id == 1);
 }
@@ -305,7 +305,7 @@ TEST_CASE("sql_repository: select_by with OR") {
   repo.insert(User{.id = 2, .name = "Bob", .score = 87.3});
   repo.insert(User{.id = 3, .name = "Carol", .score = 70.0});
 
-  auto results = repo.select_by(glz_sql::where_lt<"score">(80.0) || glz_sql::where_gt<"score">(90.0));
+  auto results = repo.select_by_vec(glz_sql::where_lt<"score">(80.0) || glz_sql::where_gt<"score">(90.0));
   REQUIRE(results.size() == 2);
 }
 
@@ -320,7 +320,7 @@ TEST_CASE("sql_repository: select_by with AND + OR precedence") {
 
   // (Alice AND score>90) OR (Bob AND score>90)
   auto results =
-      repo.select_by((glz_sql::where_eq<"name">(std::string{"Alice"}) && glz_sql::where_gt<"score">(90.0)) || (glz_sql::where_eq<"name">(std::string{"Bob"}) && glz_sql::where_gt<"score">(90.0)));
+      repo.select_by_vec((glz_sql::where_eq<"name">(std::string{"Alice"}) && glz_sql::where_gt<"score">(90.0)) || (glz_sql::where_eq<"name">(std::string{"Bob"}) && glz_sql::where_gt<"score">(90.0)));
   REQUIRE(results.size() == 2);
 }
 
@@ -333,7 +333,7 @@ TEST_CASE("sql_repository: select_by with IN") {
   repo.insert(User{.id = 2, .name = "B", .age = 20, .score = 2.0});
   repo.insert(User{.id = 3, .name = "C", .age = 30, .score = 3.0});
 
-  auto results = repo.select_by(glz_sql::where_in<"id">(int64_t{1}, int64_t{3}));
+  auto results = repo.select_by_vec(glz_sql::where_in<"id">(int64_t{1}, int64_t{3}));
   REQUIRE(results.size() == 2);
 }
 
@@ -346,7 +346,7 @@ TEST_CASE("sql_repository: select_by with BETWEEN") {
   repo.insert(User{.id = 2, .name = "B", .age = 20, .score = 2.0});
   repo.insert(User{.id = 3, .name = "C", .age = 30, .score = 3.0});
 
-  auto results = repo.select_by(glz_sql::where_between<"age">(int64_t{15}, int64_t{25}));
+  auto results = repo.select_by_vec(glz_sql::where_between<"age">(int64_t{15}, int64_t{25}));
   REQUIRE(results.size() == 1);
   REQUIRE(results[0].id == 2);
 }
@@ -360,7 +360,7 @@ TEST_CASE("sql_repository: select_by with LIKE") {
   repo.insert(User{.id = 2, .name = "Bob", .score = 2.0});
   repo.insert(User{.id = 3, .name = "Alex", .score = 3.0});
 
-  auto results = repo.select_by(glz_sql::where_like<"name">(std::string{"Al%"}));
+  auto results = repo.select_by_vec(glz_sql::where_like<"name">(std::string{"Al%"}));
   REQUIRE(results.size() == 2);
 }
 
@@ -372,11 +372,11 @@ TEST_CASE("sql_repository: select_by with IS NULL") {
   repo.insert(User{.id = 1, .email = std::string{"a@x"}, .name = "A", .score = 1.0});
   repo.insert(User{.id = 2, .email = std::nullopt, .name = "B", .score = 2.0});
 
-  auto no_email = repo.select_by(glz_sql::where_is_null<"email">());
+  auto no_email = repo.select_by_vec(glz_sql::where_is_null<"email">());
   REQUIRE(no_email.size() == 1);
   REQUIRE(no_email[0].id == 2);
 
-  auto has_email = repo.select_by(glz_sql::where_is_not_null<"email">());
+  auto has_email = repo.select_by_vec(glz_sql::where_is_not_null<"email">());
   REQUIRE(has_email.size() == 1);
   REQUIRE(has_email[0].id == 1);
 }
@@ -467,6 +467,26 @@ TEST_CASE("sql_repository: update_by with IN") {
   REQUIRE_FALSE(a3.has_value());
   REQUIRE(a2.has_value());
   REQUIRE(a2->score == 2.0);  // 未更新
+}
+
+TEST_CASE("sql_repository: select_by iterator") {
+  glz_sql::sqlite_database      db(":memory:");
+  glz_sql::sql_repository<User> repo(db);
+  repo.create_table();
+
+  User user1{.id = 1, .name = "Alice", .age = 25};
+  User user2{.id = 2, .name = "Bob", .age = 30};
+  User user3{.id = 3, .name = "Charlie", .age = 25};
+  repo.insert(user1);
+  repo.insert(user2);
+  repo.insert(user3);
+
+  auto [it, end] = repo.select_by(glz_sql::where_eq<"age">(int64_t{25}));
+  int  count     = 0;
+  for (; it != end; ++it) {
+    count++;
+  }
+  REQUIRE(count == 2);
 }
 
 TEST_CASE("condition: compile-time invalid column") {
