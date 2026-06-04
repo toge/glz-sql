@@ -12,8 +12,8 @@
 #include <iterator>
 #include <optional>
 #include <string>
+#include <ranges>
 #include <string_view>
-#include <vector>
 
 namespace glz_sql {
 
@@ -193,56 +193,24 @@ class sql_repository {
   }
 
   /**
-   * @brief 全件検索する（iterator版）
-   * @return iteratorとsentinelのペア
+   * @brief 全件検索する
+   * @return range オブジェクト
    */
-  auto select_all() const -> std::pair<sql_iterator<T>, sql_sentinel> {
+  auto select_all() const -> std::ranges::subrange<sql_iterator<T>, sql_sentinel> {
     auto const sql = generate_select_all_sql();
     return {sql_iterator<T>(db_, sql), sql_sentinel{}};
   }
 
   /**
-   * @brief 全件検索する（vector版）
-   * @return レコードのベクタ（0件の場合は空ベクタ）
-   */
-  auto select_all_vec() const -> std::vector<T> {
-    auto const sql  = generate_select_all_sql();
-    auto       stmt = db_.prepare(sql);
-    if (stmt == nullptr) {
-      std::cerr << "ERROR: Failed to prepare select_all: " << db_.error_message() << '\n';
-      return {};
-    }
-    return fetch_all(stmt.get());
-  }
-
-  /**
-   * @brief 条件式で検索する（iterator版）
+   * @brief 条件式で検索する
    * @param cond 条件式 (where_* の合成)
-   * @return iteratorとsentinelのペア
+   * @return range オブジェクト
    */
   template <typename Cond>
     requires valid_condition<Cond, T>
-  auto select_by(const Cond& cond) const -> std::pair<sql_iterator<T>, sql_sentinel> {
+  auto select_by(const Cond& cond) const -> std::ranges::subrange<sql_iterator<T>, sql_sentinel> {
     auto const sql = std::format("SELECT {} FROM {} WHERE {};", join_field_names(), T::table_name, cond.fragment());
     return {sql_iterator<T>(db_, sql, cond), sql_sentinel{}};
-  }
-
-  /**
-   * @brief 条件式で検索する（vector版）
-   * @param cond 条件式 (where_* の合成)
-   * @return レコードのベクタ
-   */
-  template <typename Cond>
-    requires valid_condition<Cond, T>
-  auto select_by_vec(const Cond& cond) const -> std::vector<T> {
-    auto const sql  = std::format("SELECT {} FROM {} WHERE {};", join_field_names(), T::table_name, cond.fragment());
-    auto       stmt = db_.prepare(sql);
-    if (stmt == nullptr) {
-      std::cerr << "ERROR: Failed to prepare select_by: " << db_.error_message() << std::endl;
-      return {};
-    }
-    cond.bind(stmt.get(), 1);
-    return fetch_all(stmt.get());
   }
 
   /**
@@ -418,17 +386,6 @@ class sql_repository {
     [&]<size_t... Is>(std::index_sequence<Is...>) {
       ((sqlite_type_traits<std::remove_cvref_t<decltype(field_value_at<Is>(record))>>::bind(stmt, static_cast<int>(Is + 1), field_value_at<Is>(record))), ...);
     }(std::make_index_sequence<field_count()>{});
-  }
-
-  /**
-   * @brief ステートメントから全行を取得する
-   */
-  static auto fetch_all(sqlite3_stmt* stmt) -> std::vector<T> {
-    std::vector<T> results;
-    while (sqlite3_step(stmt) == SQLITE_ROW) {
-      results.push_back(fetch_one(stmt));
-    }
-    return results;
   }
 
   /**

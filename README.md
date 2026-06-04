@@ -100,13 +100,22 @@ repo.create_table();
 // INSERT
 repo.insert(User{.id = 1, .name = "Alice", .age = 30, .score = 95.5});
 
-// SELECT（全件）
-auto all = repo.select_all();
+// SELECT（全件）— range-for で直接走査可能
+for (auto const& row : repo.select_all()) {
+  std::cout << row.name << "\n";
+}
 
 // SELECT（条件付き）
-auto results = repo.select_by(
+for (auto const& row : repo.select_by(
   glz_sql::where_gt<"age">(int64_t{20}) && glz_sql::where_like<"name">(std::string{"Al%"})
-);
+)) {
+  std::cout << row.name << "\n";
+}
+
+// vector に変換したい場合
+auto results = std::ranges::to<std::vector>(repo.select_by(
+  glz_sql::where_eq<"age">(int64_t{25})
+));
 
 // 1件検索
 auto user = repo.find_by(glz_sql::where_eq<"id">(int64_t{1}));
