@@ -115,13 +115,25 @@ struct sqlite_type_traits<std::string_view> {
   }
 };
 
+namespace detail {
+template <typename T, typename = void>
+struct is_optional : std::false_type {};
+
+template <typename T>
+struct is_optional<T, std::void_t<typename T::value_type>>
+    : std::is_same<T, std::optional<typename T::value_type>> {};
+}  // namespace detail
+
 /**
  * @brief std::optional<T> の特殊化: NULL 許容カラム用
  *
  * std::nullopt を NULL として bind し、SQLite からの NULL を std::nullopt として読み取る。
+ * sql_type は T と同じものを返す (CREATE TABLE 側で NULL 制約として表現する)。
  */
 template <typename T>
 struct sqlite_type_traits<std::optional<T>> {
+  static_assert(!detail::is_optional<T>::value, "nested std::optional is not supported");
+
   static constexpr const char* sql_type = sqlite_type_traits<T>::sql_type;
 
   static auto bind(sqlite3_stmt* stmt, int index, const std::optional<T>& value) -> int {
