@@ -5,9 +5,11 @@
 #include "fixed_string.hpp"
 #include "sqlite_bind.hpp"
 
+#include <cstddef>
 #include <format>
 #include <glaze/glaze.hpp>
 #include <iostream>
+#include <iterator>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -26,6 +28,102 @@ class sql_sentinel {
    * @brief 等価比較演算子
    */
   constexpr auto operator==(const sql_sentinel&) const noexcept -> bool = default;
+};
+
+/**
+ * @brief SQLite クエリ結果を走査する入力イテレータ
+ */
+template <typename T>
+class sql_iterator {
+  public:
+  using value_type      = T;
+  using difference_type = std::ptrdiff_t;
+  using iterator_category = std::input_iterator_tag;
+  using reference       = const T&;
+  using pointer         = const T*;
+
+  sql_iterator() = default;
+
+  sql_iterator(database_interface& db, std::string_view sql) {
+    auto stmt = db.prepare(sql);
+    if (stmt == nullptr) {
+      return;
+    }
+    stmt_ = std::move(stmt);
+    advance();
+  }
+
+  template <typename Cond>
+    requires valid_condition<Cond, T>
+  sql_iterator(database_interface& db, std::string_view sql, const Cond& cond) {
+    auto stmt = db.prepare(sql);
+    if (stmt == nullptr) {
+      return;
+    }
+    stmt_ = std::move(stmt);
+    cond.bind(stmt_.get(), 1);
+    advance();
+  }
+
+  sql_iterator(sql_iterator&&) = default;
+  sql_iterator& operator=(sql_iterator&&) = default;
+
+  sql_iterator(const sql_iterator&) = delete;
+  sql_iterator& operator=(const sql_iterator&) = delete;
+
+  [[nodiscard]] const T& operator*() const noexcept {
+    return *current_;
+  }
+
+  sql_iterator& operator++() {
+    advance();
+    return *this;
+  }
+
+  void operator++(int) {
+    ++*this;
+  }
+
+  [[nodiscard]] bool operator==(const sql_sentinel&) const noexcept {
+    return !current_.has_value();
+  }
+
+  private:
+  std::unique_ptr<sqlite3_stmt, decltype(&sqlite3_finalize)> stmt_{nullptr, sqlite3_finalize};
+  std::optional<T> current_;
+
+  void advance() {
+    if (stmt_ == nullptr) {
+      current_.reset();
+      return;
+    }
+    if (sqlite3_step(stmt_.get()) == SQLITE_ROW) {
+      current_.emplace(fetch_one(stmt_.get()));
+    }
+    else {
+      current_.reset();
+    }
+  }
+
+  static auto fetch_one(sqlite3_stmt* stmt) -> T {
+    T record{};
+    [&]<size_t... Is>(std::index_sequence<Is...>) {
+      ((field_value_at_mutable<Is>(record) = sqlite_type_traits<std::remove_cvref_t<decltype(field_value_at<Is>(std::declval<const T&>()))>>::column(stmt, static_cast<int>(Is))), ...);
+    }(std::make_index_sequence<field_count()>{});
+    return record;
+  }
+
+  static constexpr auto field_count() -> size_t { return glz::reflect<T>::size; }
+
+  template <size_t I>
+  static auto field_value_at(const T& t) -> decltype(auto) {
+    return t.*(glz::get<I>(glz::reflect<T>::values));
+  }
+
+  template <size_t I>
+  static auto field_value_at_mutable(T& t) -> decltype(auto) {
+    return t.*(glz::get<I>(glz::reflect<T>::values));
+  }
 };
 
 /**

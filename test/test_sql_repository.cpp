@@ -4,6 +4,8 @@
 
 #include "catch2/catch_all.hpp"
 
+#include <iterator>
+
 struct User {
   int64_t                           id{};
   std::optional<std::string>        email;
@@ -464,4 +466,11 @@ TEST_CASE("sql_sentinel basic operations") {
   glz_sql::sql_sentinel sentinel;
   glz_sql::sql_sentinel sentinel2;
   REQUIRE(sentinel == sentinel2);
+}
+
+TEST_CASE("sql_iterator type traits") {
+  using iter_type = glz_sql::sql_iterator<User>;
+  static_assert(std::input_iterator<iter_type>);
+  static_assert(std::sentinel_for<glz_sql::sql_sentinel, iter_type>);
+  SUCCEED("sql_iterator satisfies input_iterator and sentinel_for");
 }
