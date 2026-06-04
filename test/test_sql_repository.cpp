@@ -184,3 +184,10 @@ TEST_CASE("condition: where_like") {
   REQUIRE((where_like<"name">(std::string{"Al%"}).fragment()) == "name LIKE ?");
   REQUIRE(where_like<"name">(std::string{"Al%"}).placeholder_count() == 1);
 }
+
+TEST_CASE("condition: where_in") {
+  using namespace glz_sql;
+  auto c = where_in<"id">(int64_t{1}, int64_t{3}, int64_t{5});
+  REQUIRE(c.fragment() == "id IN (?, ?, ?)");
+  REQUIRE(c.placeholder_count() == 3);
+}

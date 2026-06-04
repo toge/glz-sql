@@ -246,4 +246,13 @@ auto where_like(V v) -> leaf_condition<compare_op::like, C, std::decay_t<V>> {
   return leaf_condition<compare_op::like, C, std::decay_t<V>>(std::move(v));
 }
 
+/**
+ * @brief IN 条件 (可変長、すべての値は同一型)
+ */
+template <fixed_string C, typename V, typename... Vs>
+  requires (std::same_as<V, Vs> && ...)
+auto where_in(V v, Vs... vs) -> leaf_condition<compare_op::in_op, C, std::tuple<std::decay_t<V>, std::decay_t<Vs>...>> {
+  return leaf_condition<compare_op::in_op, C, std::tuple<std::decay_t<V>, std::decay_t<Vs>...>>(std::tuple<std::decay_t<V>, std::decay_t<Vs>...>(std::move(v), std::move(vs)...));
+}
+
 }  // namespace glz_sql
