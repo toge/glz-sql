@@ -178,3 +178,9 @@ TEST_CASE("condition: basic 6 ops fragment") {
   REQUIRE(where_ne<"name">(std::string{"x"}).placeholder_count() == 1);
   REQUIRE(where_gt<"age">(int64_t{10}).placeholder_count() == 1);
 }
+
+TEST_CASE("condition: where_like") {
+  using namespace glz_sql;
+  REQUIRE((where_like<"name">(std::string{"Al%"}).fragment()) == "name LIKE ?");
+  REQUIRE(where_like<"name">(std::string{"Al%"}).placeholder_count() == 1);
+}

@@ -241,4 +241,9 @@ auto where_ge(V v) -> leaf_condition<compare_op::ge, C, std::decay_t<V>> {
   return leaf_condition<compare_op::ge, C, std::decay_t<V>>(std::move(v));
 }
 
+template <fixed_string C, typename V>
+auto where_like(V v) -> leaf_condition<compare_op::like, C, std::decay_t<V>> {
+  return leaf_condition<compare_op::like, C, std::decay_t<V>>(std::move(v));
+}
+
 }  // namespace glz_sql
