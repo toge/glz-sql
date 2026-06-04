@@ -131,3 +131,29 @@ TEST_CASE("sql_repository: multiple tables") {
   REQUIRE(users.size() == 1);
   REQUIRE(products.size() == 1);
 }
+
+TEST_CASE("sql_repository: update_by by id column") {
+  glz_sql::sqlite_database      db(":memory:");
+  glz_sql::sql_repository<User> repo(db);
+  repo.create_table();
+
+  repo.insert(User{.id = 1, .name = "Alice", .score = 95.5});
+  repo.insert(User{.id = 2, .name = "Bob", .score = 87.3});
+
+  repo.update_by<"id">(User{.id = 2, .name = "Bob", .score = 100.0}, int64_t{2});
+
+  auto bob = repo.find_by<"id">(int64_t{2});
+  REQUIRE(bob.has_value());
+  REQUIRE(bob->score == 100.0);
+}
+
+TEST_CASE("sql_repository: compile-time column validation") {
+  // コンパイル時に有効/無効なカラム名を検証する
+  static_assert(glz_sql::valid_column<"name", User>);
+  static_assert(glz_sql::valid_column<"id", User>);
+  static_assert(glz_sql::valid_column<"score", User>);
+  static_assert(!glz_sql::valid_column<"invalid_column", User>);
+  static_assert(!glz_sql::valid_column<"", User>);
+
+  SUCCEED("valid_column concept correctly validates column names at compile time");
+}
