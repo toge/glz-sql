@@ -107,7 +107,7 @@ TEST_CASE("sql_repository: remove_by") {
   repo.insert(User{.id = 1, .name = "Alice", .score = 95.5});
   repo.insert(User{.id = 2, .name = "Bob", .score = 87.3});
 
-  repo.remove_by("name", "Bob");
+  repo.remove_by<"name">("Bob");
 
   auto all = repo.select_all();
   REQUIRE(all.size() == 1);

@@ -197,13 +197,14 @@ class sql_repository {
 
   /**
    * @brief 指定カラムを条件に削除する
-   * @param cond_col 条件カラム名
+   * @tparam CondCol 条件カラム名（コンパイル時定数）
    * @param cond_val 条件値
    * @return 成功 true / 失敗 false
    */
-  template <typename V>
-  auto remove_by(std::string_view cond_col, const V& cond_val) const -> bool {
-    auto const sql  = generate_remove_by_sql(cond_col);
+  template <fixed_string CondCol, typename V>
+    requires valid_column<CondCol, T>
+  auto remove_by(const V& cond_val) const -> bool {
+    auto const sql  = generate_remove_by_sql(std::string_view(CondCol));
     auto       stmt = db_.prepare(sql);
     if (stmt == nullptr) {
       std::cerr << "ERROR: Failed to prepare remove_by: " << db_.error_message() << std::endl;
