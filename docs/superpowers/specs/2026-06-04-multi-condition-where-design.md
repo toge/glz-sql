@@ -473,3 +473,78 @@ auto no_email = repo.select_by(where_is_null<"email">());
 repo.update_by(new_user, where_eq<"id">(1));
 repo.remove_by(where_lt<"age">(0) || where_is_null<"email">());
 ```
+
+## Future Extensions (out of scope, 将来計画)
+
+本 spec は WHERE 句の複数条件化に閉じた範囲に留める。ただし以下の機能はこの実装を土台として非破壊的に追加可能。
+
+### ORDER BY / LIMIT / OFFSET
+
+- 影響範囲: 既存 `condition` 型および `xxx_by` メソッドには触らない。新メソッドを追加する。
+- 想定 API (一例):
+
+  ```cpp
+  // 方法 1: 新メソッドで追加 (既存 select_by はそのまま)
+  template <fixed_string Col, typename Cond>
+  auto select_ordered(const Cond& cond, order_direction dir = asc) const -> std::vector<T>;
+
+  // 方法 2: 戻り値をクエリオブジェクトに変更 (より高機能)
+  auto q = repo.select_by(where_gt<"age">(18));
+  q.order_by<"name">(desc).limit(10);
+  auto rows = q.fetch();
+  ```
+- 実装ヒント: `order_by<"col">(asc|desc)` で `order_spec` オブジェクトを生成し、`select_ordered` の引数に渡す。`fragment()` ヘルパで `"ORDER BY col ASC"` 等を生成。
+- 互換性: 既存呼び出しコードは変更不要。
+
+### GROUP BY / HAVING + 集約関数
+
+- 影響範囲: 行指向 (`std::vector<T>`) ではなく集約結果 (任意 shape の構造体) を返すため、リポジトリに新メソッド群を追加。
+- 想定 API:
+
+  ```cpp
+  // 集約結果の構造体 (Glaze メタでフィールド定義)
+  struct AgeStats {
+    std::string name;
+    int64_t count{};
+    double avg_age{};
+  };
+  template <> struct glz::meta<AgeStats> { /* ... */ };
+
+  // 集約クエリ
+  auto stats = repo.select_grouped<AgeStats>(
+    where_gt<"age">(0),
+    group_by<"name">(),
+    count().as<"count">(),
+    avg<"age">().as<"avg_age">()
+  );
+  ```
+- 新ファイル: `include/glaze_sql/aggregate.hpp` に `count()` / `sum()` / `avg()` / `min()` / `max()` ファクトリ。
+- 互換性: 既存 `select_by` / `find_by` は無影響。
+
+### トランザクション
+
+- 影響範囲: `condition` / WHERE とは完全に独立。`database_interface` の拡張のみ。
+- 想定 API:
+
+  ```cpp
+  // database.hpp への追加
+  class database_interface {
+    virtual auto begin() -> bool = 0;
+    virtual auto commit() -> bool = 0;
+    virtual auto rollback() -> bool = 0;
+  };
+
+  // 使用例
+  db.begin();
+  repo.update_by(record, where_eq<"id">(1));
+  repo.remove_by(where_lt<"age">(0));
+  db.commit();  // または rollback()
+  ```
+- 互換性: 既存 `execute()` / `prepare()` には触らない。SQLite 実装側に `sqlite3_exec("BEGIN")` などを追加するだけ。
+
+### 拡張時の設計メモ
+
+- 本実装では `select_by` / `find_by` の戻り値を直接 `std::vector<T>` / `std::optional<T>` としている。ORDER BY を「方法 2 (クエリオブジェクト化)」で追加する場合は、既存メソッドを残したまま新 `query` 型を段階導入することで非破壊的に移行可能。
+- `condition` 型は SQL フラグメントとバインド値の 2 責務だけを持つ最小 API に保っているため、JOIN やサブクエリを将来追加する場合も `condition` 自体を拡張せず、新しい `join_spec` などの型を並置すれば済む。
+- 新機能追加時も `valid_column` / `valid_condition` コンセプトの流用が可能。
+```
