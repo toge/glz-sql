@@ -1,3 +1,4 @@
+#include "glaze_sql/condition.hpp"
 #include "glaze_sql/database.hpp"
 #include "glaze_sql/sql_repository.hpp"
 
@@ -156,4 +157,11 @@ TEST_CASE("sql_repository: compile-time column validation") {
   static_assert(!glz_sql::valid_column<"", User>);
 
   SUCCEED("valid_column concept correctly validates column names at compile time");
+}
+
+TEST_CASE("condition: where_eq") {
+  auto c    = glz_sql::where_eq<"name">(std::string{"Alice"});
+  auto frag = c.fragment();
+  REQUIRE(frag == "name = ?");
+  REQUIRE(c.placeholder_count() == 1);
 }
