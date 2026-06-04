@@ -166,21 +166,19 @@ class sql_repository {
   }
 
   /**
-   * @brief 指定カラムを条件に削除する
-   * @tparam CondCol 条件カラム名（コンパイル時定数）
-   * @param cond_val 条件値
-   * @return 成功 true / 失敗 false
+   * @brief 条件式でレコードを削除する
    */
-  template <fixed_string CondCol, typename V>
-    requires valid_column<CondCol, T>
-  auto remove_by(const V& cond_val) const -> bool {
-    auto const sql  = generate_remove_by_sql(std::string_view(CondCol));
+  template <typename Cond>
+    requires valid_condition<Cond, T>
+  auto remove_by(const Cond& cond) const -> bool {
+    auto const sql  = std::format("DELETE FROM {} WHERE {};",
+                                  T::table_name, cond.fragment());
     auto       stmt = db_.prepare(sql);
     if (stmt == nullptr) {
       std::cerr << "ERROR: Failed to prepare remove_by: " << db_.error_message() << std::endl;
       return false;
     }
-    bind_condition(stmt.get(), 1, cond_val);
+    cond.bind(stmt.get(), 1);
     auto const result = sqlite3_step(stmt.get());
     if (result != SQLITE_DONE) {
       std::cerr << "ERROR: Failed to execute remove_by: " << db_.error_message() << std::endl;
@@ -281,11 +279,6 @@ class sql_repository {
   static auto generate_select_all_sql() -> std::string { return std::format("SELECT {} FROM {};", join_field_names(), T::table_name); }
 
   /**
-   * @brief SELECT WHERE 文を生成する
-   */
-  static auto generate_select_by_sql(std::string_view column) -> std::string { return std::format("SELECT {} FROM {} WHERE {} = ?;", join_field_names(), T::table_name, column); }
-
-  /**
    * @brief SET 句を生成する (col1 = ?, col2 = ?, ...)
    */
   static auto generate_set_clause() -> std::string {
@@ -300,32 +293,12 @@ class sql_repository {
   }
 
   /**
-   * @brief UPDATE WHERE 文を生成する
-   */
-  static auto generate_update_by_sql(std::string_view cond_col) -> std::string {
-    return std::format("UPDATE {} SET {} WHERE {} = ?;", T::table_name, generate_set_clause(), cond_col);
-  }
-
-  /**
-   * @brief DELETE WHERE 文を生成する
-   */
-  static auto generate_remove_by_sql(std::string_view column) -> std::string { return std::format("DELETE FROM {} WHERE {} = ?;", T::table_name, column); }
-
-  /**
    * @brief プリペアドステートメントにフィールド値をバインドする
    */
   static void bind_fields(sqlite3_stmt* stmt, const T& record) {
     [&]<size_t... Is>(std::index_sequence<Is...>) {
       ((sqlite_type_traits<std::remove_cvref_t<decltype(field_value_at<Is>(record))>>::bind(stmt, static_cast<int>(Is + 1), field_value_at<Is>(record))), ...);
     }(std::make_index_sequence<field_count()>{});
-  }
-
-  /**
-   * @brief 条件値をバインドする
-   */
-  template <typename V>
-  static void bind_condition(sqlite3_stmt* stmt, int index, const V& value) {
-    sqlite_type_traits<V>::bind(stmt, index, value);
   }
 
   /**

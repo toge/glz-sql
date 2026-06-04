@@ -99,7 +99,7 @@ TEST_CASE("sql_repository: update_by single condition") {
   REQUIRE(alice->score == 100.0);
 }
 
-TEST_CASE("sql_repository: remove_by") {
+TEST_CASE("sql_repository: remove_by single condition") {
   glz_sql::sqlite_database      db(":memory:");
   glz_sql::sql_repository<User> repo(db);
   repo.create_table();
@@ -107,7 +107,7 @@ TEST_CASE("sql_repository: remove_by") {
   repo.insert(User{.id = 1, .name = "Alice", .score = 95.5});
   repo.insert(User{.id = 2, .name = "Bob", .score = 87.3});
 
-  repo.remove_by<"name">("Bob");
+  repo.remove_by(glz_sql::where_eq<"name">(std::string{"Bob"}));
 
   auto all = repo.select_all();
   REQUIRE(all.size() == 1);
