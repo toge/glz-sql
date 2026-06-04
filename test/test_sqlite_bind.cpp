@@ -1,5 +1,5 @@
 #include "catch2/catch_all.hpp"
-#include "glaze_sql/sqlite_bind.hpp"
+#include "glz-sql/sqlite_bind.hpp"
 
 TEST_CASE("sqlite_bind header compiles") {
   // Type traits compile-time checks
