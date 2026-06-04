@@ -237,6 +237,15 @@ concept any_condition = requires {
   typename T::is_composite_condition_tag;
 };
 
+/**
+ * @brief 条件が妥当かチェック
+ *
+ * 葉条件 (leaf_condition) と合成条件 (composite_condition) の両方を許可。
+ * カラム名の存在チェックは含めない (型システム外)。
+ */
+template <typename Cond, typename T>
+concept valid_condition = any_condition<Cond>;
+
 namespace detail {
 
 /**
