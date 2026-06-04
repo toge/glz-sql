@@ -165,3 +165,16 @@ TEST_CASE("condition: where_eq") {
   REQUIRE(frag == "name = ?");
   REQUIRE(c.placeholder_count() == 1);
 }
+
+TEST_CASE("condition: basic 6 ops fragment") {
+  using namespace glz_sql;
+
+  REQUIRE((where_ne<"name">(std::string{"x"}).fragment()) == "name != ?");
+  REQUIRE((where_lt<"age">(int64_t{10}).fragment()) == "age < ?");
+  REQUIRE((where_le<"age">(int64_t{10}).fragment()) == "age <= ?");
+  REQUIRE((where_gt<"age">(int64_t{10}).fragment()) == "age > ?");
+  REQUIRE((where_ge<"age">(int64_t{10}).fragment()) == "age >= ?");
+
+  REQUIRE(where_ne<"name">(std::string{"x"}).placeholder_count() == 1);
+  REQUIRE(where_gt<"age">(int64_t{10}).placeholder_count() == 1);
+}

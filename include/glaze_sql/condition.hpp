@@ -216,4 +216,29 @@ auto where_eq(V v) -> leaf_condition<compare_op::eq, C, std::decay_t<V>> {
   return leaf_condition<compare_op::eq, C, std::decay_t<V>>(std::move(v));
 }
 
+template <fixed_string C, typename V>
+auto where_ne(V v) -> leaf_condition<compare_op::ne, C, std::decay_t<V>> {
+  return leaf_condition<compare_op::ne, C, std::decay_t<V>>(std::move(v));
+}
+
+template <fixed_string C, typename V>
+auto where_lt(V v) -> leaf_condition<compare_op::lt, C, std::decay_t<V>> {
+  return leaf_condition<compare_op::lt, C, std::decay_t<V>>(std::move(v));
+}
+
+template <fixed_string C, typename V>
+auto where_le(V v) -> leaf_condition<compare_op::le, C, std::decay_t<V>> {
+  return leaf_condition<compare_op::le, C, std::decay_t<V>>(std::move(v));
+}
+
+template <fixed_string C, typename V>
+auto where_gt(V v) -> leaf_condition<compare_op::gt, C, std::decay_t<V>> {
+  return leaf_condition<compare_op::gt, C, std::decay_t<V>>(std::move(v));
+}
+
+template <fixed_string C, typename V>
+auto where_ge(V v) -> leaf_condition<compare_op::ge, C, std::decay_t<V>> {
+  return leaf_condition<compare_op::ge, C, std::decay_t<V>>(std::move(v));
+}
+
 }  // namespace glz_sql
