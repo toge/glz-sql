@@ -73,7 +73,7 @@ TEST_CASE("sql_repository: find_by") {
   REQUIRE_FALSE(not_found.has_value());
 }
 
-TEST_CASE("sql_repository: select_by") {
+TEST_CASE("sql_repository: select_by single condition") {
   glz_sql::sqlite_database      db(":memory:");
   glz_sql::sql_repository<User> repo(db);
   repo.create_table();
@@ -82,7 +82,7 @@ TEST_CASE("sql_repository: select_by") {
   repo.insert(User{.id = 2, .name = "Bob", .score = 87.3});
   repo.insert(User{.id = 3, .name = "Alice", .score = 92.0});
 
-  auto alices = repo.select_by<"name">("Alice");
+  auto alices = repo.select_by(glz_sql::where_eq<"name">(std::string{"Alice"}));
   REQUIRE(alices.size() == 2);
 }
 

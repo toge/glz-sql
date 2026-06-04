@@ -1,8 +1,8 @@
 #pragma once
 
 #include "database.hpp"
+#include "fixed_string.hpp"
 #include "sqlite_bind.hpp"
-#include "sql_repository.hpp"  // fixed_string を使う
 
 #include <concepts>
 #include <format>

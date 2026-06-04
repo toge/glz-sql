@@ -1,6 +1,8 @@
 #pragma once
 
+#include "condition.hpp"
 #include "database.hpp"
+#include "fixed_string.hpp"
 #include "sqlite_bind.hpp"
 
 #include <format>
@@ -12,33 +14,6 @@
 #include <vector>
 
 namespace glz_sql {
-
-/**
- * @brief コンパイル時文字列を保持する構造体（NTTP として使用可能）
- */
-template <size_t N>
-struct fixed_string {
-  char data[N]{};
-
-  /**
-   * @brief 文字列リテラルから構築するコンストラクタ
-   */
-  consteval fixed_string(const char (&str)[N]) {
-    for (size_t i = 0; i < N; ++i) {
-      data[i] = str[i];
-    }
-  }
-
-  /**
-   * @brief std::string_view に変換する
-   */
-  consteval operator std::string_view() const { return {data, N - 1}; }
-
-  /**
-   * @brief 文字列長を取得する
-   */
-  consteval auto size() const -> size_t { return N - 1; }
-};
 
 /**
  * @brief 構造体が SQL テーブルとして使用できることを保証するコンセプト
@@ -128,21 +103,21 @@ class sql_repository {
   }
 
   /**
-   * @brief 指定カラムで条件検索する（複数件）
-   * @tparam Column 条件カラム名（コンパイル時定数）
-   * @param value 条件値
-   * @return レコードのベクタ（0件の場合は空ベクタ）
+   * @brief 条件式で検索する（複数件）
+   * @param cond 条件式 (where_* の合成)
+   * @return レコードのベクタ
    */
-  template <fixed_string Column, typename V>
-    requires valid_column<Column, T>
-  auto select_by(const V& value) const -> std::vector<T> {
-    auto const sql  = generate_select_by_sql(std::string_view(Column));
+  template <typename Cond>
+    requires valid_condition<Cond, T>
+  auto select_by(const Cond& cond) const -> std::vector<T> {
+    auto const sql  = std::format("SELECT {} FROM {} WHERE {};",
+                                  join_field_names(), T::table_name, cond.fragment());
     auto       stmt = db_.prepare(sql);
     if (stmt == nullptr) {
       std::cerr << "ERROR: Failed to prepare select_by: " << db_.error_message() << std::endl;
       return {};
     }
-    bind_condition(stmt.get(), 1, value);
+    cond.bind(stmt.get(), 1);
     return fetch_all(stmt.get());
   }
 
