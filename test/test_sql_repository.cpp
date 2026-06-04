@@ -5,6 +5,8 @@
 #include "catch2/catch_all.hpp"
 
 #include <iterator>
+#include <ranges>
+#include <vector>
 
 struct User {
   int64_t                           id{};
@@ -511,4 +513,66 @@ TEST_CASE("sql_iterator type traits") {
   static_assert(std::input_iterator<iter_type>);
   static_assert(std::sentinel_for<glz_sql::sql_sentinel, iter_type>);
   SUCCEED("sql_iterator satisfies input_iterator and sentinel_for");
+}
+
+TEST_CASE("std::ranges::for_each with select_all") {
+  glz_sql::sqlite_database      db(":memory:");
+  glz_sql::sql_repository<User> repo(db);
+  repo.create_table();
+
+  User user1{.id = 1, .name = "Alice", .age = 25};
+  User user2{.id = 2, .name = "Bob", .age = 30};
+  repo.insert(user1);
+  repo.insert(user2);
+
+  auto [it, end] = repo.select_all();
+  std::vector<std::string> names;
+  std::ranges::for_each(std::ranges::subrange(std::move(it), end), [&](const User& u) { names.push_back(u.name); });
+  REQUIRE(names.size() == 2);
+  REQUIRE(names[0] == "Alice");
+  REQUIRE(names[1] == "Bob");
+}
+
+TEST_CASE("std::ranges::filter_view with select_all") {
+  glz_sql::sqlite_database      db(":memory:");
+  glz_sql::sql_repository<User> repo(db);
+  repo.create_table();
+
+  User user1{.id = 1, .name = "Alice", .age = 25};
+  User user2{.id = 2, .name = "Bob", .age = 30};
+  User user3{.id = 3, .name = "Charlie", .age = 35};
+  repo.insert(user1);
+  repo.insert(user2);
+  repo.insert(user3);
+
+  auto [it, end] = repo.select_all();
+  auto sub       = std::ranges::subrange(std::move(it), end);
+  auto filtered  = std::ranges::filter_view(std::move(sub), [](const User& u) { return u.age > 25; });
+  int  count     = 0;
+  for (auto&& user : filtered) {
+    count++;
+  }
+  REQUIRE(count == 2);
+}
+
+TEST_CASE("std::ranges::transform_view") {
+  glz_sql::sqlite_database      db(":memory:");
+  glz_sql::sql_repository<User> repo(db);
+  repo.create_table();
+
+  User user1{.id = 1, .name = "Alice", .age = 25};
+  User user2{.id = 2, .name = "Bob", .age = 30};
+  repo.insert(user1);
+  repo.insert(user2);
+
+  auto [it, end] = repo.select_all();
+  auto sub         = std::ranges::subrange(std::move(it), end);
+  auto transformed = std::ranges::transform_view(std::move(sub), [](const User& u) { return u.name; });
+  std::vector<std::string> names;
+  for (auto&& name : transformed) {
+    names.push_back(name);
+  }
+  REQUIRE(names.size() == 2);
+  REQUIRE(names[0] == "Alice");
+  REQUIRE(names[1] == "Bob");
 }
