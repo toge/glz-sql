@@ -36,11 +36,11 @@ class sql_sentinel {
 template <typename T>
 class sql_iterator {
   public:
-  using value_type      = T;
-  using difference_type = std::ptrdiff_t;
+  using value_type        = T;
+  using difference_type   = std::ptrdiff_t;
   using iterator_category = std::input_iterator_tag;
-  using reference       = const T&;
-  using pointer         = const T*;
+  using reference         = const T&;
+  using pointer           = const T*;
 
   sql_iterator() = default;
 
@@ -65,32 +65,26 @@ class sql_iterator {
     advance();
   }
 
-  sql_iterator(sql_iterator&&) = default;
+  sql_iterator(sql_iterator&&)            = default;
   sql_iterator& operator=(sql_iterator&&) = default;
 
-  sql_iterator(const sql_iterator&) = delete;
+  sql_iterator(const sql_iterator&)            = delete;
   sql_iterator& operator=(const sql_iterator&) = delete;
 
-  [[nodiscard]] const T& operator*() const noexcept {
-    return *current_;
-  }
+  [[nodiscard]] const T& operator*() const { return current_.value(); }
 
   sql_iterator& operator++() {
     advance();
     return *this;
   }
 
-  void operator++(int) {
-    ++*this;
-  }
+  void operator++(int) { ++*this; }
 
-  [[nodiscard]] bool operator==(const sql_sentinel&) const noexcept {
-    return !current_.has_value();
-  }
+  [[nodiscard]] bool operator==(const sql_sentinel&) const noexcept { return !current_.has_value(); }
 
   private:
   std::unique_ptr<sqlite3_stmt, decltype(&sqlite3_finalize)> stmt_{nullptr, sqlite3_finalize};
-  std::optional<T> current_;
+  std::optional<T>                                           current_;
 
   void advance() {
     if (stmt_ == nullptr) {
@@ -99,8 +93,7 @@ class sql_iterator {
     }
     if (sqlite3_step(stmt_.get()) == SQLITE_ROW) {
       current_.emplace(fetch_one(stmt_.get()));
-    }
-    else {
+    } else {
       current_.reset();
     }
   }
