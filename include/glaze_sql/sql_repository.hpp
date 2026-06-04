@@ -110,8 +110,7 @@ class sql_repository {
   template <typename Cond>
     requires valid_condition<Cond, T>
   auto select_by(const Cond& cond) const -> std::vector<T> {
-    auto const sql  = std::format("SELECT {} FROM {} WHERE {};",
-                                  join_field_names(), T::table_name, cond.fragment());
+    auto const sql  = std::format("SELECT {} FROM {} WHERE {};", join_field_names(), T::table_name, cond.fragment());
     auto       stmt = db_.prepare(sql);
     if (stmt == nullptr) {
       std::cerr << "ERROR: Failed to prepare select_by: " << db_.error_message() << std::endl;
@@ -127,8 +126,7 @@ class sql_repository {
   template <typename Cond>
     requires valid_condition<Cond, T>
   auto find_by(const Cond& cond) const -> std::optional<T> {
-    auto const sql  = std::format("SELECT {} FROM {} WHERE {};",
-                                  join_field_names(), T::table_name, cond.fragment());
+    auto const sql  = std::format("SELECT {} FROM {} WHERE {};", join_field_names(), T::table_name, cond.fragment());
     auto       stmt = db_.prepare(sql);
     if (stmt == nullptr) {
       std::cerr << "ERROR: Failed to prepare find_by: " << db_.error_message() << std::endl;
@@ -148,8 +146,7 @@ class sql_repository {
   template <typename Cond>
     requires valid_condition<Cond, T>
   auto update_by(const T& record, const Cond& cond) const -> bool {
-    auto const sql  = std::format("UPDATE {} SET {} WHERE {};",
-                                  T::table_name, generate_set_clause(), cond.fragment());
+    auto const sql  = std::format("UPDATE {} SET {} WHERE {};", T::table_name, generate_set_clause(), cond.fragment());
     auto       stmt = db_.prepare(sql);
     if (stmt == nullptr) {
       std::cerr << "ERROR: Failed to prepare update_by: " << db_.error_message() << std::endl;
@@ -171,8 +168,7 @@ class sql_repository {
   template <typename Cond>
     requires valid_condition<Cond, T>
   auto remove_by(const Cond& cond) const -> bool {
-    auto const sql  = std::format("DELETE FROM {} WHERE {};",
-                                  T::table_name, cond.fragment());
+    auto const sql  = std::format("DELETE FROM {} WHERE {};", T::table_name, cond.fragment());
     auto       stmt = db_.prepare(sql);
     if (stmt == nullptr) {
       std::cerr << "ERROR: Failed to prepare remove_by: " << db_.error_message() << std::endl;
@@ -283,9 +279,7 @@ class sql_repository {
    */
   static auto generate_set_clause() -> std::string {
     std::string set_clause;
-    [&]<size_t... Is>(std::index_sequence<Is...>) {
-      ((set_clause += std::string(field_name_at<Is>()) + " = ?", set_clause += ","), ...);
-    }(std::make_index_sequence<field_count()>{});
+    [&]<size_t... Is>(std::index_sequence<Is...>) { ((set_clause += std::string(field_name_at<Is>()) + " = ?", set_clause += ","), ...); }(std::make_index_sequence<field_count()>{});
     if (!set_clause.empty()) {
       set_clause.pop_back();
     }

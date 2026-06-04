@@ -5,24 +5,18 @@
 #include "catch2/catch_all.hpp"
 
 struct User {
-  int64_t                                id{};
-  std::optional<std::string>             email;
-  std::string                            name;
-  int64_t                                age{};
-  double                                 score{};
-  static constexpr std::string_view      table_name = "users";
+  int64_t                           id{};
+  std::optional<std::string>        email;
+  std::string                       name;
+  int64_t                           age{};
+  double                            score{};
+  static constexpr std::string_view table_name = "users";
 };
 
 template <>
 struct glz::meta<User> {
   using type                  = User;
-  static constexpr auto value = object(
-    "id", &User::id,
-    "email", &User::email,
-    "name", &User::name,
-    "age", &User::age,
-    "score", &User::score
-  );
+  static constexpr auto value = object("id", &User::id, "email", &User::email, "name", &User::name, "age", &User::age, "score", &User::score);
 };
 
 struct Product {
@@ -99,8 +93,7 @@ TEST_CASE("sql_repository: update_by single condition") {
 
   repo.insert(User{.id = 1, .name = "Alice", .score = 95.5});
 
-  repo.update_by(User{.id = 1, .name = "Alice", .score = 100.0},
-                 glz_sql::where_eq<"name">(std::string{"Alice"}));
+  repo.update_by(User{.id = 1, .name = "Alice", .score = 100.0}, glz_sql::where_eq<"name">(std::string{"Alice"}));
 
   auto alice = repo.find_by(glz_sql::where_eq<"name">(std::string{"Alice"}));
   REQUIRE(alice.has_value());
@@ -148,8 +141,7 @@ TEST_CASE("sql_repository: update_by by id column") {
   repo.insert(User{.id = 1, .name = "Alice", .score = 95.5});
   repo.insert(User{.id = 2, .name = "Bob", .score = 87.3});
 
-  repo.update_by(User{.id = 2, .name = "Bob", .score = 100.0},
-                 glz_sql::where_eq<"id">(int64_t{2}));
+  repo.update_by(User{.id = 2, .name = "Bob", .score = 100.0}, glz_sql::where_eq<"id">(int64_t{2}));
 
   auto bob = repo.find_by(glz_sql::where_eq<"id">(int64_t{2}));
   REQUIRE(bob.has_value());
@@ -224,8 +216,7 @@ TEST_CASE("condition: AND composition") {
 
 TEST_CASE("condition: AND chain") {
   using namespace glz_sql;
-  auto c = where_gt<"age">(int64_t{18}) && where_eq<"name">(std::string{"Alice"})
-    && where_lt<"age">(int64_t{65});
+  auto c = where_gt<"age">(int64_t{18}) && where_eq<"name">(std::string{"Alice"}) && where_lt<"age">(int64_t{65});
   REQUIRE(c.fragment() == "((age > ?) AND (name = ?)) AND (age < ?)");
   REQUIRE(c.placeholder_count() == 3);
 }
@@ -239,8 +230,7 @@ TEST_CASE("condition: OR composition") {
 
 TEST_CASE("condition: AND of ORs") {
   using namespace glz_sql;
-  auto c = (where_eq<"status">(std::string{"active"}) || where_eq<"status">(std::string{"pending"}))
-        && where_gt<"age">(int64_t{18});
+  auto c = (where_eq<"status">(std::string{"active"}) || where_eq<"status">(std::string{"pending"})) && where_gt<"age">(int64_t{18});
   REQUIRE(c.fragment() == "((status = ?) OR (status = ?)) AND (age > ?)");
   REQUIRE(c.placeholder_count() == 3);
 }
@@ -250,7 +240,7 @@ TEST_CASE("condition: valid_condition concept") {
 
   // struct で User テーブル風のカラム名セットを定義
   struct fake_user {
-    int age;
+    int         age;
     std::string name;
   };
 
@@ -262,9 +252,7 @@ TEST_CASE("condition: valid_condition concept") {
   static_assert(!valid_condition<std::string, fake_user>);
 
   // composite の再帰
-  static_assert(valid_condition<
-    decltype(where_eq<"age">(int64_t{20}) && where_eq<"name">(std::string{"x"})),
-    fake_user>);
+  static_assert(valid_condition<decltype(where_eq<"age">(int64_t{20}) && where_eq<"name">(std::string{"x"})), fake_user>);
   // ただしカラム名検証は構造体リフレクションを使うので、Glaze reflect された struct でないと通らない
   // fake_user には glaze reflect がないので、テストではチェックの通過のみを確認
 
@@ -281,11 +269,9 @@ TEST_CASE("sql_repository: select_by with AND") {
 
   repo.insert(User{.id = 1, .name = "Alice", .score = 95.5});
   repo.insert(User{.id = 2, .name = "Alice", .score = 80.0});
-  repo.insert(User{.id = 3, .name = "Bob",   .score = 70.0});
+  repo.insert(User{.id = 3, .name = "Bob", .score = 70.0});
 
-  auto results = repo.select_by(
-    glz_sql::where_eq<"name">(std::string{"Alice"}) && glz_sql::where_gt<"score">(90.0)
-  );
+  auto results = repo.select_by(glz_sql::where_eq<"name">(std::string{"Alice"}) && glz_sql::where_gt<"score">(90.0));
   REQUIRE(results.size() == 1);
   REQUIRE(results[0].id == 1);
 }
@@ -296,12 +282,10 @@ TEST_CASE("sql_repository: select_by with OR") {
   repo.create_table();
 
   repo.insert(User{.id = 1, .name = "Alice", .score = 95.5});
-  repo.insert(User{.id = 2, .name = "Bob",   .score = 87.3});
+  repo.insert(User{.id = 2, .name = "Bob", .score = 87.3});
   repo.insert(User{.id = 3, .name = "Carol", .score = 70.0});
 
-  auto results = repo.select_by(
-    glz_sql::where_lt<"score">(80.0) || glz_sql::where_gt<"score">(90.0)
-  );
+  auto results = repo.select_by(glz_sql::where_lt<"score">(80.0) || glz_sql::where_gt<"score">(90.0));
   REQUIRE(results.size() == 2);
 }
 
@@ -312,13 +296,11 @@ TEST_CASE("sql_repository: select_by with AND + OR precedence") {
 
   repo.insert(User{.id = 1, .name = "Alice", .score = 95.5});
   repo.insert(User{.id = 2, .name = "Alice", .score = 70.0});
-  repo.insert(User{.id = 3, .name = "Bob",   .score = 95.0});
+  repo.insert(User{.id = 3, .name = "Bob", .score = 95.0});
 
   // (Alice AND score>90) OR (Bob AND score>90)
-  auto results = repo.select_by(
-    (glz_sql::where_eq<"name">(std::string{"Alice"}) && glz_sql::where_gt<"score">(90.0))
-    || (glz_sql::where_eq<"name">(std::string{"Bob"}) && glz_sql::where_gt<"score">(90.0))
-  );
+  auto results =
+      repo.select_by((glz_sql::where_eq<"name">(std::string{"Alice"}) && glz_sql::where_gt<"score">(90.0)) || (glz_sql::where_eq<"name">(std::string{"Bob"}) && glz_sql::where_gt<"score">(90.0)));
   REQUIRE(results.size() == 2);
 }
 
@@ -355,8 +337,8 @@ TEST_CASE("sql_repository: select_by with LIKE") {
   repo.create_table();
 
   repo.insert(User{.id = 1, .name = "Alice", .score = 1.0});
-  repo.insert(User{.id = 2, .name = "Bob",   .score = 2.0});
-  repo.insert(User{.id = 3, .name = "Alex",  .score = 3.0});
+  repo.insert(User{.id = 2, .name = "Bob", .score = 2.0});
+  repo.insert(User{.id = 3, .name = "Alex", .score = 3.0});
 
   auto results = repo.select_by(glz_sql::where_like<"name">(std::string{"Al%"}));
   REQUIRE(results.size() == 2);
@@ -368,7 +350,7 @@ TEST_CASE("sql_repository: select_by with IS NULL") {
   repo.create_table();
 
   repo.insert(User{.id = 1, .email = std::string{"a@x"}, .name = "A", .score = 1.0});
-  repo.insert(User{.id = 2, .email = std::nullopt,        .name = "B", .score = 2.0});
+  repo.insert(User{.id = 2, .email = std::nullopt, .name = "B", .score = 2.0});
 
   auto no_email = repo.select_by(glz_sql::where_is_null<"email">());
   REQUIRE(no_email.size() == 1);
@@ -386,11 +368,10 @@ TEST_CASE("sql_repository: update_by with multiple conditions") {
 
   repo.insert(User{.id = 1, .name = "Alice", .age = 20, .score = 1.0});
   repo.insert(User{.id = 2, .name = "Alice", .age = 30, .score = 2.0});
-  repo.insert(User{.id = 3, .name = "Bob",   .age = 25, .score = 3.0});
+  repo.insert(User{.id = 3, .name = "Bob", .age = 25, .score = 3.0});
 
   // name=Alice AND age<25 のみ更新
-  repo.update_by(User{.id = 1, .name = "Alice", .age = 20, .score = 999.0},
-                 glz_sql::where_eq<"name">(std::string{"Alice"}) && glz_sql::where_lt<"age">(int64_t{25}));
+  repo.update_by(User{.id = 1, .name = "Alice", .age = 20, .score = 999.0}, glz_sql::where_eq<"name">(std::string{"Alice"}) && glz_sql::where_lt<"age">(int64_t{25}));
 
   auto a1 = repo.find_by(glz_sql::where_eq<"id">(int64_t{1}));
   REQUIRE(a1.has_value());
@@ -407,13 +388,12 @@ TEST_CASE("sql_repository: update_by bind order (SET then WHERE)") {
   repo.create_table();
 
   repo.insert(User{.id = 1, .name = "Alice", .age = 20, .score = 1.0});
-  repo.insert(User{.id = 2, .name = "Bob",   .age = 30, .score = 2.0});
+  repo.insert(User{.id = 2, .name = "Bob", .age = 30, .score = 2.0});
 
   // ヒット対象は id=2 のみ。SET 句に id=99 を指定しても WHERE 句で id=2 に絞られる。
   // → バインド順が正しければ SET 値が id=2 の行に適用され、id=1 は無変更。
   //   SET で id=99, name="Updated" などが適用された結果は id=99 で検索できる。
-  repo.update_by(User{.id = 99, .name = "Updated", .age = 99, .score = 100.0},
-                 glz_sql::where_eq<"id">(int64_t{2}));
+  repo.update_by(User{.id = 99, .name = "Updated", .age = 99, .score = 100.0}, glz_sql::where_eq<"id">(int64_t{2}));
 
   auto updated = repo.find_by(glz_sql::where_eq<"id">(int64_t{99}));
   REQUIRE(updated.has_value());
@@ -438,11 +418,10 @@ TEST_CASE("sql_repository: remove_by with multiple conditions") {
 
   repo.insert(User{.id = 1, .name = "Alice", .age = 20, .score = 1.0});
   repo.insert(User{.id = 2, .name = "Alice", .age = 30, .score = 2.0});
-  repo.insert(User{.id = 3, .name = "Bob",   .age = 25, .score = 3.0});
+  repo.insert(User{.id = 3, .name = "Bob", .age = 25, .score = 3.0});
 
   // name=Alice OR name=Bob
-  repo.remove_by(glz_sql::where_eq<"name">(std::string{"Alice"})
-                 || glz_sql::where_eq<"name">(std::string{"Bob"}));
+  repo.remove_by(glz_sql::where_eq<"name">(std::string{"Alice"}) || glz_sql::where_eq<"name">(std::string{"Bob"}));
 
   auto all = repo.select_all();
   REQUIRE(all.size() == 0);
@@ -457,8 +436,7 @@ TEST_CASE("sql_repository: update_by with IN") {
   repo.insert(User{.id = 2, .name = "B", .score = 2.0});
   repo.insert(User{.id = 3, .name = "C", .score = 3.0});
 
-  repo.update_by(User{.id = 1, .name = "A", .score = 0.0},
-                 glz_sql::where_in<"id">(int64_t{1}, int64_t{3}));
+  repo.update_by(User{.id = 1, .name = "A", .score = 0.0}, glz_sql::where_in<"id">(int64_t{1}, int64_t{3}));
 
   auto a1 = repo.find_by(glz_sql::where_eq<"id">(int64_t{1}));
   auto a3 = repo.find_by(glz_sql::where_eq<"id">(int64_t{3}));

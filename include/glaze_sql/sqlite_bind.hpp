@@ -1,7 +1,7 @@
 #pragma once
 
-#include <sqlite3.h>
 #include <optional>
+#include <sqlite3.h>
 #include <string>
 #include <type_traits>
 
@@ -116,12 +116,11 @@ struct sqlite_type_traits<std::string_view> {
 };
 
 namespace detail {
-template <typename T, typename = void>
-struct is_optional : std::false_type {};
+  template <typename T, typename = void>
+  struct is_optional : std::false_type {};
 
-template <typename T>
-struct is_optional<T, std::void_t<typename T::value_type>>
-    : std::is_same<T, std::optional<typename T::value_type>> {};
+  template <typename T>
+  struct is_optional<T, std::void_t<typename T::value_type>> : std::is_same<T, std::optional<typename T::value_type>> {};
 }  // namespace detail
 
 /**
