@@ -31,7 +31,7 @@
 ## File Structure
 
 ```
-include/glaze_sql/
+include/glz-sql/
   condition.hpp        -- 新規。condition 型 + where_* ファクトリ + 演算子
   sql_repository.hpp   -- 修正。xxx_by 4 関数を新 API に置換
 test/
@@ -518,7 +518,7 @@ repo.remove_by(where_lt<"age">(0) || where_is_null<"email">());
     avg<"age">().as<"avg_age">()
   );
   ```
-- 新ファイル: `include/glaze_sql/aggregate.hpp` に `count()` / `sum()` / `avg()` / `min()` / `max()` ファクトリ。
+- 新ファイル: `include/glz-sql/aggregate.hpp` に `count()` / `sum()` / `avg()` / `min()` / `max()` ファクトリ。
 - 互換性: 既存 `select_by` / `find_by` は無影響。
 
 ### トランザクション

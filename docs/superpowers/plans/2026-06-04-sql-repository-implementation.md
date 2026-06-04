@@ -16,9 +16,9 @@
 |---|---|
 | `vcpkg.json` | sqlite3, quill を追加 |
 | `CMakeLists.txt` | find_package + リンク設定を追加 |
-| `include/glaze_sql/sqlite_bind.hpp` | C++型↔SQLite型のテンプレート特化 |
-| `include/glaze_sql/database.hpp` | 抽象インターフェース + SQLite実装 |
-| `include/glaze_sql/sql_repository.hpp` | `sql_repository<T>` テンプレートクラス |
+| `include/glz-sql/sqlite_bind.hpp` | C++型↔SQLite型のテンプレート特化 |
+| `include/glz-sql/database.hpp` | 抽象インターフェース + SQLite実装 |
+| `include/glz-sql/sql_repository.hpp` | `sql_repository<T>` テンプレートクラス |
 | `test/test_sql_repository.cpp` | 動作確認サンプル + Catch2 テスト |
 
 ---
@@ -67,7 +67,7 @@ target_link_libraries(all_test PRIVATE
 - [ ] **Step 4: include ディレクトリを作成**
 
 ```bash
-mkdir -p include/glaze_sql
+mkdir -p include/glz-sql
 ```
 
 - [ ] **Step 5: ビルドして依存関係が正しく解決されることを確認**
@@ -88,7 +88,7 @@ git commit -m "build: add sqlite3 and quill dependencies"
 ### Task 2: sqlite_bind.hpp — 型マッピング
 
 **Files:**
-- Create: `include/glaze_sql/sqlite_bind.hpp`
+- Create: `include/glz-sql/sqlite_bind.hpp`
 
 - [ ] **Step 1: sqlite_bind.hpp を作成**
 
@@ -176,7 +176,7 @@ struct sqlite_type_traits<std::string> {
 `test/test_sql_repository.cpp` に一時的なインクルードチェックを追加:
 
 ```cpp
-#include "glaze_sql/sqlite_bind.hpp"
+#include "glz-sql/sqlite_bind.hpp"
 ```
 
 ビルドが通ることを確認:
@@ -188,7 +188,7 @@ struct sqlite_type_traits<std::string> {
 - [ ] **Step 3: コミット**
 
 ```bash
-git add include/glaze_sql/sqlite_bind.hpp
+git add include/glz-sql/sqlite_bind.hpp
 git commit -m "feat: add sqlite_bind.hpp for C++/SQLite type mapping"
 ```
 
@@ -197,7 +197,7 @@ git commit -m "feat: add sqlite_bind.hpp for C++/SQLite type mapping"
 ### Task 3: database.hpp — 抽象インターフェース + SQLite 実装
 
 **Files:**
-- Create: `include/glaze_sql/database.hpp`
+- Create: `include/glz-sql/database.hpp`
 
 - [ ] **Step 1: database.hpp を作成**
 
@@ -360,7 +360,7 @@ private:
 - [ ] **Step 3: コミット**
 
 ```bash
-git add include/glaze_sql/database.hpp
+git add include/glz-sql/database.hpp
 git commit -m "feat: add database.hpp with abstract interface and SQLite implementation"
 ```
 
@@ -369,7 +369,7 @@ git commit -m "feat: add database.hpp with abstract interface and SQLite impleme
 ### Task 4: sql_repository.hpp — コアテンプレートクラス
 
 **Files:**
-- Create: `include/glaze_sql/sql_repository.hpp`
+- Create: `include/glz-sql/sql_repository.hpp`
 
 - [ ] **Step 1: sql_repository.hpp を作成**
 
@@ -726,7 +726,7 @@ private:
 - [ ] **Step 3: コミット**
 
 ```bash
-git add include/glaze_sql/sql_repository.hpp
+git add include/glz-sql/sql_repository.hpp
 git commit -m "feat: add sql_repository.hpp with generic CRUD operations"
 ```
 
@@ -740,8 +740,8 @@ git commit -m "feat: add sql_repository.hpp with generic CRUD operations"
 - [ ] **Step 1: test_sql_repository.cpp を作成**
 
 ```cpp
-#include "glaze_sql/database.hpp"
-#include "glaze_sql/sql_repository.hpp"
+#include "glz-sql/database.hpp"
+#include "glz-sql/sql_repository.hpp"
 
 #include "catch2/catch_all.hpp"
 #include <quill/Quill.h>
@@ -908,7 +908,7 @@ Expected: 全テスト PASS
 - [ ] **Step 3: clang-format を実行**
 
 ```bash
-clang-format -i include/glaze_sql/*.hpp test/test_sql_repository.cpp
+clang-format -i include/glz-sql/*.hpp test/test_sql_repository.cpp
 ```
 
 - [ ] **Step 4: 最終コミット**

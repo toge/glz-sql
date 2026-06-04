@@ -90,7 +90,7 @@ repo.find_by<"invalid_column">("Alice");  // static_assert エラー
 ### Task 1: fixed_string クラスの追加
 
 **Files:**
-- Modify: `include/glaze_sql/sql_repository.hpp`
+- Modify: `include/glz-sql/sql_repository.hpp`
 
 - [ ] **Step 1: fixed_string クラスを追加**
 
@@ -154,7 +154,7 @@ concept valid_column = [] {
 - [ ] **Step 4: コミット**
 
 ```bash
-git add include/glaze_sql/sql_repository.hpp
+git add include/glz-sql/sql_repository.hpp
 git commit -m "feat: add fixed_string and valid_column concept for NTTP column validation"
 ```
 
@@ -163,7 +163,7 @@ git commit -m "feat: add fixed_string and valid_column concept for NTTP column v
 ### Task 2: find_by の NTTP 化
 
 **Files:**
-- Modify: `include/glaze_sql/sql_repository.hpp`
+- Modify: `include/glz-sql/sql_repository.hpp`
 
 - [ ] **Step 1: find_by のシグネチャを変更**
 
@@ -201,7 +201,7 @@ auto find_by(const V& value) const -> std::optional<T> {
 - [ ] **Step 3: コミット**
 
 ```bash
-git add include/glaze_sql/sql_repository.hpp
+git add include/glz-sql/sql_repository.hpp
 git commit -m "feat: NTTP-ify find_by with fixed_string"
 ```
 
@@ -210,7 +210,7 @@ git commit -m "feat: NTTP-ify find_by with fixed_string"
 ### Task 3: select_by の NTTP 化
 
 **Files:**
-- Modify: `include/glaze_sql/sql_repository.hpp`
+- Modify: `include/glz-sql/sql_repository.hpp`
 
 - [ ] **Step 1: select_by のシグネチャを変更**
 
@@ -244,7 +244,7 @@ auto select_by(const V& value) const -> std::vector<T> {
 - [ ] **Step 3: コミット**
 
 ```bash
-git add include/glaze_sql/sql_repository.hpp
+git add include/glz-sql/sql_repository.hpp
 git commit -m "feat: NTTP-ify select_by with fixed_string"
 ```
 
@@ -253,7 +253,7 @@ git commit -m "feat: NTTP-ify select_by with fixed_string"
 ### Task 4: update_by の NTTP 化
 
 **Files:**
-- Modify: `include/glaze_sql/sql_repository.hpp`
+- Modify: `include/glz-sql/sql_repository.hpp`
 
 - [ ] **Step 1: update_by のシグネチャを変更**
 
@@ -294,7 +294,7 @@ auto update_by(const T& record, const V& cond_val) const -> bool {
 - [ ] **Step 3: コミット**
 
 ```bash
-git add include/glaze_sql/sql_repository.hpp
+git add include/glz-sql/sql_repository.hpp
 git commit -m "feat: NTTP-ify update_by with fixed_string"
 ```
 
@@ -303,7 +303,7 @@ git commit -m "feat: NTTP-ify update_by with fixed_string"
 ### Task 5: remove_by の NTTP 化
 
 **Files:**
-- Modify: `include/glaze_sql/sql_repository.hpp`
+- Modify: `include/glz-sql/sql_repository.hpp`
 
 - [ ] **Step 1: remove_by のシグネチャを変更**
 
@@ -342,7 +342,7 @@ auto remove_by(const V& cond_val) const -> bool {
 - [ ] **Step 3: コミット**
 
 ```bash
-git add include/glaze_sql/sql_repository.hpp
+git add include/glz-sql/sql_repository.hpp
 git commit -m "feat: NTTP-ify remove_by with fixed_string"
 ```
 
@@ -418,7 +418,7 @@ Expected: 全テスト PASS
 - [ ] **Step 3: clang-format を実行**
 
 ```bash
-clang-format -i include/glaze_sql/*.hpp test/test_sql_repository.cpp
+clang-format -i include/glz-sql/*.hpp test/test_sql_repository.cpp
 ```
 
 - [ ] **Step 4: 最終コミット**

@@ -5,7 +5,7 @@
 **Goal:** `sql_repository<T>` の `select_by` / `find_by` / `update_by` / `remove_by` を、`where_*` ファクトリと `&&` / `||` で合成した複数条件 (AND / OR) を受け取れるよう拡張する。比較演算子 11 種 (eq, ne, lt, le, gt, ge, like, IN, BETWEEN, IS NULL, IS NOT NULL) をサポート。
 
 **Architecture:**
-- 新ヘッダ `include/glaze_sql/condition.hpp` に `leaf_condition<Op, Col, V, V2>` / `composite_condition<Op, L, R>` クラスを定義
+- 新ヘッダ `include/glz-sql/condition.hpp` に `leaf_condition<Op, Col, V, V2>` / `composite_condition<Op, L, R>` クラスを定義
 - `where_eq` / `where_ne` / ... / `where_in` / `where_between` / `where_is_null` / `where_is_not_null` ファクトリを提供
 - `operator&&` / `operator||` で 2 条件を AND / OR 合成
 - `valid_condition<Cond, T>` コンセプトで全葉のカラム名を T のフィールドに対してコンパイル時検証
@@ -20,14 +20,14 @@
 ### 新規ファイル
 
 ```
-include/glaze_sql/condition.hpp  -- condition 型 + where_* ファクトリ + 演算子
+include/glz-sql/condition.hpp  -- condition 型 + where_* ファクトリ + 演算子
 ```
 
 ### 変更ファイル
 
 ```
-include/glaze_sql/sqlite_bind.hpp  -- std::optional<T> の特殊化を追加 (IS NULL テスト用)
-include/glaze_sql/sql_repository.hpp  -- xxx_by 4 関数を新 API に置換
+include/glz-sql/sqlite_bind.hpp  -- std::optional<T> の特殊化を追加 (IS NULL テスト用)
+include/glz-sql/sql_repository.hpp  -- xxx_by 4 関数を新 API に置換
 test/test_sql_repository.cpp  -- 既存テスト移行 + 新規テスト追加
 ```
 
@@ -76,7 +76,7 @@ class composite_condition {
 ### Task 1: std::optional の特殊化追加
 
 **Files:**
-- Modify: `include/glaze_sql/sqlite_bind.hpp`
+- Modify: `include/glz-sql/sqlite_bind.hpp`
 
 - [ ] **Step 1: 特殊化を追加**
 
@@ -116,7 +116,7 @@ Expected: 成功 (変更は追加のみ)
 - [ ] **Step 3: コミット**
 
 ```bash
-git add include/glaze_sql/sqlite_bind.hpp
+git add include/glz-sql/sqlite_bind.hpp
 git commit -m "feat: add std::optional support to sqlite_type_traits"
 ```
 
@@ -125,7 +125,7 @@ git commit -m "feat: add std::optional support to sqlite_type_traits"
 ### Task 2: condition.hpp 基本構造 (型とコンセプト)
 
 **Files:**
-- Create: `include/glaze_sql/condition.hpp`
+- Create: `include/glz-sql/condition.hpp`
 
 - [ ] **Step 1: ヘッダのスケルトンを作成**
 
@@ -208,7 +208,7 @@ Expected: ビルド成功 (header-only、参照のみで実体化なし)
 - [ ] **Step 3: コミット**
 
 ```bash
-git add include/glaze_sql/condition.hpp
+git add include/glz-sql/condition.hpp
 git commit -m "feat(condition): add compare_op enum and condition class skeleton"
 ```
 
@@ -217,14 +217,14 @@ git commit -m "feat(condition): add compare_op enum and condition class skeleton
 ### Task 3: leaf_condition の基本 6 種サポート
 
 **Files:**
-- Modify: `include/glaze_sql/condition.hpp`
+- Modify: `include/glz-sql/condition.hpp`
 
 - [ ] **Step 1: 失敗するテストを書く**
 
 `test/test_sql_repository.cpp` の末尾に追加:
 
 ```cpp
-#include "glaze_sql/condition.hpp"
+#include "glz-sql/condition.hpp"
 
 TEST_CASE("condition: where_eq") {
   auto c = glz_sql::where_eq<"name">(std::string{"Alice"});
@@ -362,7 +362,7 @@ Expected: PASS
 - [ ] **Step 5: コミット**
 
 ```bash
-git add include/glaze_sql/condition.hpp test/test_sql_repository.cpp
+git add include/glz-sql/condition.hpp test/test_sql_repository.cpp
 git commit -m "feat(condition): add leaf_condition with basic 6 ops and where_eq"
 ```
 
@@ -371,7 +371,7 @@ git commit -m "feat(condition): add leaf_condition with basic 6 ops and where_eq
 ### Task 4: 残りの基本 5 種のファクトリ
 
 **Files:**
-- Modify: `include/glaze_sql/condition.hpp`
+- Modify: `include/glz-sql/condition.hpp`
 - Modify: `test/test_sql_repository.cpp`
 
 - [ ] **Step 1: テストを追加**
@@ -432,7 +432,7 @@ Expected: PASS
 - [ ] **Step 4: コミット**
 
 ```bash
-git add include/glaze_sql/condition.hpp test/test_sql_repository.cpp
+git add include/glz-sql/condition.hpp test/test_sql_repository.cpp
 git commit -m "feat(condition): add where_ne/lt/le/gt/ge factories"
 ```
 
@@ -441,7 +441,7 @@ git commit -m "feat(condition): add where_ne/lt/le/gt/ge factories"
 ### Task 5: LIKE Op
 
 **Files:**
-- Modify: `include/glaze_sql/condition.hpp`
+- Modify: `include/glz-sql/condition.hpp`
 - Modify: `test/test_sql_repository.cpp`
 
 - [ ] **Step 1: テストを追加**
@@ -471,7 +471,7 @@ Expected: PASS
 - [ ] **Step 4: コミット**
 
 ```bash
-git add include/glaze_sql/condition.hpp test/test_sql_repository.cpp
+git add include/glz-sql/condition.hpp test/test_sql_repository.cpp
 git commit -m "feat(condition): add where_like factory"
 ```
 
@@ -480,7 +480,7 @@ git commit -m "feat(condition): add where_like factory"
 ### Task 6: IN Op
 
 **Files:**
-- Modify: `include/glaze_sql/condition.hpp`
+- Modify: `include/glz-sql/condition.hpp`
 - Modify: `test/test_sql_repository.cpp`
 
 - [ ] **Step 1: テストを追加**
@@ -515,7 +515,7 @@ Expected: PASS
 - [ ] **Step 4: コミット**
 
 ```bash
-git add include/glaze_sql/condition.hpp test/test_sql_repository.cpp
+git add include/glz-sql/condition.hpp test/test_sql_repository.cpp
 git commit -m "feat(condition): add where_in factory with variadic values"
 ```
 
@@ -524,7 +524,7 @@ git commit -m "feat(condition): add where_in factory with variadic values"
 ### Task 7: BETWEEN Op
 
 **Files:**
-- Modify: `include/glaze_sql/condition.hpp`
+- Modify: `include/glz-sql/condition.hpp`
 - Modify: `test/test_sql_repository.cpp`
 
 - [ ] **Step 1: テストを追加**
@@ -555,7 +555,7 @@ Expected: PASS
 - [ ] **Step 4: コミット**
 
 ```bash
-git add include/glaze_sql/condition.hpp test/test_sql_repository.cpp
+git add include/glz-sql/condition.hpp test/test_sql_repository.cpp
 git commit -m "feat(condition): add where_between factory"
 ```
 
@@ -564,7 +564,7 @@ git commit -m "feat(condition): add where_between factory"
 ### Task 8: IS NULL / IS NOT NULL + any_condition コンセプト
 
 **Files:**
-- Modify: `include/glaze_sql/condition.hpp`
+- Modify: `include/glz-sql/condition.hpp`
 - Modify: `test/test_sql_repository.cpp`
 
 - [ ] **Step 1: テストを追加**
@@ -611,7 +611,7 @@ Expected: PASS
 - [ ] **Step 4: コミット**
 
 ```bash
-git add include/glaze_sql/condition.hpp test/test_sql_repository.cpp
+git add include/glz-sql/condition.hpp test/test_sql_repository.cpp
 git commit -m "feat(condition): add where_is_null / where_is_not_null and any_condition concept"
 ```
 
@@ -620,7 +620,7 @@ git commit -m "feat(condition): add where_is_null / where_is_not_null and any_co
 ### Task 9: composite_condition と operator&&
 
 **Files:**
-- Modify: `include/glaze_sql/condition.hpp`
+- Modify: `include/glz-sql/condition.hpp`
 - Modify: `test/test_sql_repository.cpp`
 
 - [ ] **Step 1: テストを追加**
@@ -708,7 +708,7 @@ Expected: PASS
 - [ ] **Step 4: コミット**
 
 ```bash
-git add include/glaze_sql/condition.hpp test/test_sql_repository.cpp
+git add include/glz-sql/condition.hpp test/test_sql_repository.cpp
 git commit -m "feat(condition): add composite_condition and operator&&"
 ```
 
@@ -717,7 +717,7 @@ git commit -m "feat(condition): add composite_condition and operator&&"
 ### Task 10: operator&& の拡張 (leaf+composite, composite+leaf, composite+composite)
 
 **Files:**
-- Modify: `include/glaze_sql/condition.hpp`
+- Modify: `include/glz-sql/condition.hpp`
 - Modify: `test/test_sql_repository.cpp`
 
 - [ ] **Step 1: テストを追加**
@@ -792,7 +792,7 @@ Expected: PASS
 - [ ] **Step 4: コミット**
 
 ```bash
-git add include/glaze_sql/condition.hpp test/test_sql_repository.cpp
+git add include/glz-sql/condition.hpp test/test_sql_repository.cpp
 git commit -m "feat(condition): extend operator&& to support composite operands"
 ```
 
@@ -801,7 +801,7 @@ git commit -m "feat(condition): extend operator&& to support composite operands"
 ### Task 11: operator|| (OR)
 
 **Files:**
-- Modify: `include/glaze_sql/condition.hpp`
+- Modify: `include/glz-sql/condition.hpp`
 - Modify: `test/test_sql_repository.cpp`
 
 - [ ] **Step 1: テストを追加**
@@ -857,7 +857,7 @@ Expected: PASS
 - [ ] **Step 4: コミット**
 
 ```bash
-git add include/glaze_sql/condition.hpp test/test_sql_repository.cpp
+git add include/glz-sql/condition.hpp test/test_sql_repository.cpp
 git commit -m "feat(condition): add operator|| with composite overloads"
 ```
 
@@ -866,7 +866,7 @@ git commit -m "feat(condition): add operator|| with composite overloads"
 ### Task 12: valid_condition コンセプト
 
 **Files:**
-- Modify: `include/glaze_sql/condition.hpp`
+- Modify: `include/glz-sql/condition.hpp`
 
 - [ ] **Step 1: コンセプトを追加**
 
@@ -928,7 +928,7 @@ Expected: PASS
 - [ ] **Step 3: コミット**
 
 ```bash
-git add include/glaze_sql/condition.hpp test/test_sql_repository.cpp
+git add include/glz-sql/condition.hpp test/test_sql_repository.cpp
 git commit -m "feat(condition): add valid_condition concept with type aliases"
 ```
 
@@ -937,7 +937,7 @@ git commit -m "feat(condition): add valid_condition concept with type aliases"
 ### Task 13: sql_repository の select_by を新 API に置換
 
 **Files:**
-- Modify: `include/glaze_sql/sql_repository.hpp`
+- Modify: `include/glz-sql/sql_repository.hpp`
 - Modify: `test/test_sql_repository.cpp`
 
 - [ ] **Step 1: テストを移行**
@@ -1005,7 +1005,7 @@ Expected: PASS
 - [ ] **Step 6: コミット**
 
 ```bash
-git add include/glaze_sql/sql_repository.hpp test/test_sql_repository.cpp
+git add include/glz-sql/sql_repository.hpp test/test_sql_repository.cpp
 git commit -m "feat(repository): replace select_by with condition-based API"
 ```
 
@@ -1014,7 +1014,7 @@ git commit -m "feat(repository): replace select_by with condition-based API"
 ### Task 14: sql_repository の find_by を新 API に置換
 
 **Files:**
-- Modify: `include/glaze_sql/sql_repository.hpp`
+- Modify: `include/glz-sql/sql_repository.hpp`
 - Modify: `test/test_sql_repository.cpp`
 
 - [ ] **Step 1: テストを移行**
@@ -1074,7 +1074,7 @@ Expected: PASS
 - [ ] **Step 4: コミット**
 
 ```bash
-git add include/glaze_sql/sql_repository.hpp test/test_sql_repository.cpp
+git add include/glz-sql/sql_repository.hpp test/test_sql_repository.cpp
 git commit -m "feat(repository): replace find_by with condition-based API"
 ```
 
@@ -1083,7 +1083,7 @@ git commit -m "feat(repository): replace find_by with condition-based API"
 ### Task 15: sql_repository の update_by を新 API に置換
 
 **Files:**
-- Modify: `include/glaze_sql/sql_repository.hpp`
+- Modify: `include/glz-sql/sql_repository.hpp`
 - Modify: `test/test_sql_repository.cpp`
 
 - [ ] **Step 1: テストを移行**
@@ -1185,7 +1185,7 @@ Expected: PASS
 - [ ] **Step 4: コミット**
 
 ```bash
-git add include/glaze_sql/sql_repository.hpp test/test_sql_repository.cpp
+git add include/glz-sql/sql_repository.hpp test/test_sql_repository.cpp
 git commit -m "feat(repository): replace update_by with condition-based API"
 ```
 
@@ -1194,7 +1194,7 @@ git commit -m "feat(repository): replace update_by with condition-based API"
 ### Task 16: sql_repository の remove_by を新 API に置換
 
 **Files:**
-- Modify: `include/glaze_sql/sql_repository.hpp`
+- Modify: `include/glz-sql/sql_repository.hpp`
 - Modify: `test/test_sql_repository.cpp`
 
 - [ ] **Step 1: テストを移行**
@@ -1253,7 +1253,7 @@ Expected: PASS
 - [ ] **Step 4: コミット**
 
 ```bash
-git add include/glaze_sql/sql_repository.hpp test/test_sql_repository.cpp
+git add include/glz-sql/sql_repository.hpp test/test_sql_repository.cpp
 git commit -m "feat(repository): replace remove_by with condition-based API"
 ```
 
@@ -1592,7 +1592,7 @@ Expected: 全テスト PASS
 
 - [ ] **Step 3: clang-format を実行**
 
-Run: `clang-format -i include/glaze_sql/*.hpp test/test_sql_repository.cpp`
+Run: `clang-format -i include/glz-sql/*.hpp test/test_sql_repository.cpp`
 
 - [ ] **Step 4: フォーマット後のビルド確認**
 
