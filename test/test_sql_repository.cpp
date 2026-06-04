@@ -265,3 +265,51 @@ TEST_CASE("condition: valid_condition concept") {
 
   REQUIRE(true);  // ダミー
 }
+
+TEST_CASE("sql_repository: select_by with AND") {
+  glz_sql::sqlite_database      db(":memory:");
+  glz_sql::sql_repository<User> repo(db);
+  repo.create_table();
+
+  repo.insert(User{.id = 1, .name = "Alice", .score = 95.5});
+  repo.insert(User{.id = 2, .name = "Alice", .score = 80.0});
+  repo.insert(User{.id = 3, .name = "Bob",   .score = 70.0});
+
+  auto results = repo.select_by(
+    glz_sql::where_eq<"name">(std::string{"Alice"}) && glz_sql::where_gt<"score">(90.0)
+  );
+  REQUIRE(results.size() == 1);
+  REQUIRE(results[0].id == 1);
+}
+
+TEST_CASE("sql_repository: select_by with OR") {
+  glz_sql::sqlite_database      db(":memory:");
+  glz_sql::sql_repository<User> repo(db);
+  repo.create_table();
+
+  repo.insert(User{.id = 1, .name = "Alice", .score = 95.5});
+  repo.insert(User{.id = 2, .name = "Bob",   .score = 87.3});
+  repo.insert(User{.id = 3, .name = "Carol", .score = 70.0});
+
+  auto results = repo.select_by(
+    glz_sql::where_lt<"score">(80.0) || glz_sql::where_gt<"score">(90.0)
+  );
+  REQUIRE(results.size() == 2);
+}
+
+TEST_CASE("sql_repository: select_by with AND + OR precedence") {
+  glz_sql::sqlite_database      db(":memory:");
+  glz_sql::sql_repository<User> repo(db);
+  repo.create_table();
+
+  repo.insert(User{.id = 1, .name = "Alice", .score = 95.5});
+  repo.insert(User{.id = 2, .name = "Alice", .score = 70.0});
+  repo.insert(User{.id = 3, .name = "Bob",   .score = 95.0});
+
+  // (Alice AND score>90) OR (Bob AND score>90)
+  auto results = repo.select_by(
+    (glz_sql::where_eq<"name">(std::string{"Alice"}) && glz_sql::where_gt<"score">(90.0))
+    || (glz_sql::where_eq<"name">(std::string{"Bob"}) && glz_sql::where_gt<"score">(90.0))
+  );
+  REQUIRE(results.size() == 2);
+}
