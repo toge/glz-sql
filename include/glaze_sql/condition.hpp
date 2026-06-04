@@ -255,4 +255,9 @@ auto where_in(V v, Vs... vs) -> leaf_condition<compare_op::in_op, C, std::tuple<
   return leaf_condition<compare_op::in_op, C, std::tuple<std::decay_t<V>, std::decay_t<Vs>...>>(std::tuple<std::decay_t<V>, std::decay_t<Vs>...>(std::move(v), std::move(vs)...));
 }
 
+template <fixed_string C, typename V>
+auto where_between(V lo, V hi) -> leaf_condition<compare_op::between, C, std::decay_t<V>, std::decay_t<V>> {
+  return leaf_condition<compare_op::between, C, std::decay_t<V>, std::decay_t<V>>(std::move(lo), std::move(hi));
+}
+
 }  // namespace glz_sql

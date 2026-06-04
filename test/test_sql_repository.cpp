@@ -191,3 +191,10 @@ TEST_CASE("condition: where_in") {
   REQUIRE(c.fragment() == "id IN (?, ?, ?)");
   REQUIRE(c.placeholder_count() == 3);
 }
+
+TEST_CASE("condition: where_between") {
+  using namespace glz_sql;
+  auto c = where_between<"age">(int64_t{20}, int64_t{30});
+  REQUIRE(c.fragment() == "age BETWEEN ? AND ?");
+  REQUIRE(c.placeholder_count() == 2);
+}
