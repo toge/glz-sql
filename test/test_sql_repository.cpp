@@ -84,14 +84,15 @@ TEST_CASE("sql_repository: select_by single condition") {
   REQUIRE(alices.size() == 2);
 }
 
-TEST_CASE("sql_repository: update_by") {
+TEST_CASE("sql_repository: update_by single condition") {
   glz_sql::sqlite_database      db(":memory:");
   glz_sql::sql_repository<User> repo(db);
   repo.create_table();
 
   repo.insert(User{.id = 1, .name = "Alice", .score = 95.5});
 
-  repo.update_by<"name">(User{.id = 1, .name = "Alice", .score = 100.0}, "Alice");
+  repo.update_by(User{.id = 1, .name = "Alice", .score = 100.0},
+                 glz_sql::where_eq<"name">(std::string{"Alice"}));
 
   auto alice = repo.find_by(glz_sql::where_eq<"name">(std::string{"Alice"}));
   REQUIRE(alice.has_value());
@@ -139,7 +140,8 @@ TEST_CASE("sql_repository: update_by by id column") {
   repo.insert(User{.id = 1, .name = "Alice", .score = 95.5});
   repo.insert(User{.id = 2, .name = "Bob", .score = 87.3});
 
-  repo.update_by<"id">(User{.id = 2, .name = "Bob", .score = 100.0}, int64_t{2});
+  repo.update_by(User{.id = 2, .name = "Bob", .score = 100.0},
+                 glz_sql::where_eq<"id">(int64_t{2}));
 
   auto bob = repo.find_by(glz_sql::where_eq<"id">(int64_t{2}));
   REQUIRE(bob.has_value());
