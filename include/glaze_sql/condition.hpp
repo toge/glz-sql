@@ -160,6 +160,70 @@ auto operator&&(const composite_condition<LOp, LL, LR>& l,
 }
 
 /**
+ * @brief OR 演算子 (leaf + leaf)
+ */
+template <compare_op LOp, fixed_string LC, typename LV, typename LV2,
+          compare_op ROp, fixed_string RC, typename RV, typename RV2>
+auto operator||(const leaf_condition<LOp, LC, LV, LV2>& l,
+                const leaf_condition<ROp, RC, RV, RV2>& r)
+    -> composite_condition<compare_op::or_op,
+                           leaf_condition<LOp, LC, LV, LV2>,
+                           leaf_condition<ROp, RC, RV, RV2>> {
+  return composite_condition<compare_op::or_op,
+                             leaf_condition<LOp, LC, LV, LV2>,
+                             leaf_condition<ROp, RC, RV, RV2>>(l, r);
+}
+
+/**
+ * @brief OR 演算子 (leaf + composite)
+ */
+template <compare_op LOp, fixed_string LC, typename LV, typename LV2,
+          compare_op Op, typename L, typename R>
+  requires (Op == compare_op::and_op || Op == compare_op::or_op)
+auto operator||(const leaf_condition<LOp, LC, LV, LV2>& l,
+                const composite_condition<Op, L, R>& r)
+    -> composite_condition<compare_op::or_op,
+                           leaf_condition<LOp, LC, LV, LV2>,
+                           composite_condition<Op, L, R>> {
+  return composite_condition<compare_op::or_op,
+                             leaf_condition<LOp, LC, LV, LV2>,
+                             composite_condition<Op, L, R>>(l, r);
+}
+
+/**
+ * @brief OR 演算子 (composite + leaf)
+ */
+template <compare_op Op, typename L, typename R,
+          compare_op ROp, fixed_string RC, typename RV, typename RV2>
+  requires (Op == compare_op::and_op || Op == compare_op::or_op)
+auto operator||(const composite_condition<Op, L, R>& l,
+                const leaf_condition<ROp, RC, RV, RV2>& r)
+    -> composite_condition<compare_op::or_op,
+                           composite_condition<Op, L, R>,
+                           leaf_condition<ROp, RC, RV, RV2>> {
+  return composite_condition<compare_op::or_op,
+                             composite_condition<Op, L, R>,
+                             leaf_condition<ROp, RC, RV, RV2>>(l, r);
+}
+
+/**
+ * @brief OR 演算子 (composite + composite)
+ */
+template <compare_op LOp, typename LL, typename LR,
+          compare_op ROp, typename RL, typename RR>
+  requires ((LOp == compare_op::and_op || LOp == compare_op::or_op)
+         && (ROp == compare_op::and_op || ROp == compare_op::or_op))
+auto operator||(const composite_condition<LOp, LL, LR>& l,
+                const composite_condition<ROp, RL, RR>& r)
+    -> composite_condition<compare_op::or_op,
+                           composite_condition<LOp, LL, LR>,
+                           composite_condition<ROp, RL, RR>> {
+  return composite_condition<compare_op::or_op,
+                             composite_condition<LOp, LL, LR>,
+                             composite_condition<ROp, RL, RR>>(l, r);
+}
+
+/**
  * @brief 任意の condition 型 (葉または合成) であることを判定するコンセプト
  *
  * leaf_condition は `using is_leaf_condition_tag = void;` を、

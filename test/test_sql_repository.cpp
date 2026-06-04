@@ -221,3 +221,18 @@ TEST_CASE("condition: AND chain") {
   REQUIRE(c.fragment() == "((age > ?) AND (name = ?)) AND (age < ?)");
   REQUIRE(c.placeholder_count() == 3);
 }
+
+TEST_CASE("condition: OR composition") {
+  using namespace glz_sql;
+  auto c = where_eq<"status">(std::string{"active"}) || where_eq<"status">(std::string{"pending"});
+  REQUIRE(c.fragment() == "(status = ?) OR (status = ?)");
+  REQUIRE(c.placeholder_count() == 2);
+}
+
+TEST_CASE("condition: AND of ORs") {
+  using namespace glz_sql;
+  auto c = (where_eq<"status">(std::string{"active"}) || where_eq<"status">(std::string{"pending"}))
+        && where_gt<"age">(int64_t{18});
+  REQUIRE(c.fragment() == "((status = ?) OR (status = ?)) AND (age > ?)");
+  REQUIRE(c.placeholder_count() == 3);
+}
