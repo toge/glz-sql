@@ -10,8 +10,8 @@
 
 struct User {
   int64_t                           id{};
-  std::optional<std::string>        email;
-  std::string                       name;
+  std::optional<std::string>        email{};
+  std::string                       name{};
   int64_t                           age{};
   double                            score{};
   static constexpr std::string_view table_name = "users";
@@ -25,7 +25,7 @@ struct glz::meta<User> {
 
 struct Product {
   int64_t                           id{};
-  std::string                       name;
+  std::string                       name{};
   double                            price{};
   static constexpr std::string_view table_name = "products";
 };
@@ -48,11 +48,10 @@ TEST_CASE("sql_repository: insert and select_all") {
   glz_sql::sql_repository<User> repo(db);
   repo.create_table();
 
-  repo.insert(User{.id = 1, .name = "Alice", .score = 95.5});
-  repo.insert(User{.id = 2, .name = "Bob", .score = 87.3});
+  repo.insert(User{.id = 1, .name = "Alice", .score = 95.5,});
+  repo.insert(User{.id = 2, .name = "Bob", .score = 87.3,});
 
-  auto [it, end] = repo.select_all();
-  std::vector<User> all(it, end);
+  auto all = repo.select_all() | std::ranges::to<std::vector>();
   REQUIRE(all.size() == 2);
   REQUIRE(all[0].id == 1);
   REQUIRE(all[0].name == "Alice");
@@ -72,8 +71,7 @@ TEST_CASE("sql_repository: select_all vector") {
   repo.insert(user1);
   repo.insert(user2);
 
-  auto [it, end] = repo.select_all();
-  std::vector<User> all(it, end);
+  auto all = repo.select_all() | std::ranges::to<std::vector>();
   REQUIRE(all.size() == 2);
   REQUIRE(all[0].id == 1);
   REQUIRE(all[0].name == "Alice");
@@ -106,9 +104,8 @@ TEST_CASE("sql_repository: select_by single condition") {
   repo.insert(User{.id = 2, .name = "Bob", .score = 87.3});
   repo.insert(User{.id = 3, .name = "Alice", .score = 92.0});
 
-  auto [it, end] = repo.select_by(glz_sql::where_eq<"name">(std::string{"Alice"}));
-  std::vector<User> alices(it, end);
-  REQUIRE(alices.size() == 2);
+  auto all = repo.select_by(glz_sql::where_eq<"name">(std::string{"Alice"})) | std::ranges::to<std::vector>();
+  REQUIRE(all.size() == 2);
 }
 
 TEST_CASE("sql_repository: update_by single condition") {
@@ -135,8 +132,7 @@ TEST_CASE("sql_repository: remove_by single condition") {
 
   repo.remove_by(glz_sql::where_eq<"name">(std::string{"Bob"}));
 
-  auto [it, end] = repo.select_all();
-  std::vector<User> all(it, end);
+  auto all = repo.select_all()| std::ranges::to<std::vector>();
   REQUIRE(all.size() == 1);
   REQUIRE(all[0].name == "Alice");
 }
@@ -152,10 +148,8 @@ TEST_CASE("sql_repository: multiple tables") {
   user_repo.insert(User{.id = 1, .name = "Alice", .score = 95.5});
   product_repo.insert(Product{.id = 1, .name = "Widget", .price = 9.99});
 
-  auto [it_u, end_u]     = user_repo.select_all();
-  std::vector<User> users(it_u, end_u);
-  auto [it_p, end_p]     = product_repo.select_all();
-  std::vector<Product> products(it_p, end_p);
+  auto users = user_repo.select_all() | std::ranges::to<std::vector>();
+  auto products = product_repo.select_all() | std::ranges::to<std::vector>();
 
   REQUIRE(users.size() == 1);
   REQUIRE(products.size() == 1);
@@ -299,8 +293,7 @@ TEST_CASE("sql_repository: select_by with AND") {
   repo.insert(User{.id = 2, .name = "Alice", .score = 80.0});
   repo.insert(User{.id = 3, .name = "Bob", .score = 70.0});
 
-  auto [it, end] = repo.select_by(glz_sql::where_eq<"name">(std::string{"Alice"}) && glz_sql::where_gt<"score">(90.0));
-  std::vector<User> results(it, end);
+  auto results = repo.select_by(glz_sql::where_eq<"name">(std::string{"Alice"}) && glz_sql::where_gt<"score">(90.0)) | std::ranges::to<std::vector>();
   REQUIRE(results.size() == 1);
   REQUIRE(results[0].id == 1);
 }
@@ -314,8 +307,7 @@ TEST_CASE("sql_repository: select_by with OR") {
   repo.insert(User{.id = 2, .name = "Bob", .score = 87.3});
   repo.insert(User{.id = 3, .name = "Carol", .score = 70.0});
 
-  auto [it, end] = repo.select_by(glz_sql::where_lt<"score">(80.0) || glz_sql::where_gt<"score">(90.0));
-  std::vector<User> results(it, end);
+  auto results = repo.select_by(glz_sql::where_lt<"score">(80.0) || glz_sql::where_gt<"score">(90.0)) | std::ranges::to<std::vector>();
   REQUIRE(results.size() == 2);
 }
 
@@ -329,8 +321,7 @@ TEST_CASE("sql_repository: select_by with AND + OR precedence") {
   repo.insert(User{.id = 3, .name = "Bob", .score = 95.0});
 
   // (Alice AND score>90) OR (Bob AND score>90)
-  auto [it, end] = repo.select_by((glz_sql::where_eq<"name">(std::string{"Alice"}) && glz_sql::where_gt<"score">(90.0)) || (glz_sql::where_eq<"name">(std::string{"Bob"}) && glz_sql::where_gt<"score">(90.0)));
-  std::vector<User> results(it, end);
+  auto results = repo.select_by((glz_sql::where_eq<"name">(std::string{"Alice"}) && glz_sql::where_gt<"score">(90.0)) || (glz_sql::where_eq<"name">(std::string{"Bob"}) && glz_sql::where_gt<"score">(90.0))) | std::ranges::to<std::vector>();
   REQUIRE(results.size() == 2);
 }
 
@@ -343,8 +334,7 @@ TEST_CASE("sql_repository: select_by with IN") {
   repo.insert(User{.id = 2, .name = "B", .age = 20, .score = 2.0});
   repo.insert(User{.id = 3, .name = "C", .age = 30, .score = 3.0});
 
-  auto [it, end] = repo.select_by(glz_sql::where_in<"id">(int64_t{1}, int64_t{3}));
-  std::vector<User> results(it, end);
+  auto results = repo.select_by(glz_sql::where_in<"id">(int64_t{1}, int64_t{3})) | std::ranges::to<std::vector>();
   REQUIRE(results.size() == 2);
 }
 
@@ -357,8 +347,7 @@ TEST_CASE("sql_repository: select_by with BETWEEN") {
   repo.insert(User{.id = 2, .name = "B", .age = 20, .score = 2.0});
   repo.insert(User{.id = 3, .name = "C", .age = 30, .score = 3.0});
 
-  auto [it, end] = repo.select_by(glz_sql::where_between<"age">(int64_t{15}, int64_t{25}));
-  std::vector<User> results(it, end);
+  auto results = repo.select_by(glz_sql::where_between<"age">(int64_t{15}, int64_t{25})) | std::ranges::to<std::vector>();
   REQUIRE(results.size() == 1);
   REQUIRE(results[0].id == 2);
 }
@@ -372,8 +361,7 @@ TEST_CASE("sql_repository: select_by with LIKE") {
   repo.insert(User{.id = 2, .name = "Bob", .score = 2.0});
   repo.insert(User{.id = 3, .name = "Alex", .score = 3.0});
 
-  auto [it, end] = repo.select_by(glz_sql::where_like<"name">(std::string{"Al%"}));
-  std::vector<User> results(it, end);
+  auto results = repo.select_by(glz_sql::where_like<"name">(std::string{"Al%"})) | std::ranges::to<std::vector>();
   REQUIRE(results.size() == 2);
 }
 
@@ -385,13 +373,11 @@ TEST_CASE("sql_repository: select_by with IS NULL") {
   repo.insert(User{.id = 1, .email = std::string{"a@x"}, .name = "A", .score = 1.0});
   repo.insert(User{.id = 2, .email = std::nullopt, .name = "B", .score = 2.0});
 
-  auto [it1, end1] = repo.select_by(glz_sql::where_is_null<"email">());
-  std::vector<User> no_email(it1, end1);
+  auto no_email = repo.select_by(glz_sql::where_is_null<"email">()) | std::ranges::to<std::vector>();
   REQUIRE(no_email.size() == 1);
   REQUIRE(no_email[0].id == 2);
 
-  auto [it2, end2] = repo.select_by(glz_sql::where_is_not_null<"email">());
-  std::vector<User> has_email(it2, end2);
+  auto has_email = repo.select_by(glz_sql::where_is_not_null<"email">()) | std::ranges::to<std::vector>();
   REQUIRE(has_email.size() == 1);
   REQUIRE(has_email[0].id == 1);
 }
@@ -458,8 +444,7 @@ TEST_CASE("sql_repository: remove_by with multiple conditions") {
   // name=Alice OR name=Bob
   repo.remove_by(glz_sql::where_eq<"name">(std::string{"Alice"}) || glz_sql::where_eq<"name">(std::string{"Bob"}));
 
-  auto [it, end] = repo.select_all();
-  std::vector<User> all(it, end);
+  auto all = repo.select_all() | std::ranges::to<std::vector>();
   REQUIRE(all.size() == 0);
 }
 
@@ -497,8 +482,7 @@ TEST_CASE("sql_repository: select_by vector") {
   repo.insert(user2);
   repo.insert(user3);
 
-  auto [it, end] = repo.select_by(glz_sql::where_eq<"age">(int64_t{25}));
-  std::vector<User> results(it, end);
+  auto results = repo.select_by(glz_sql::where_eq<"age">(int64_t{25})) | std::ranges::to<std::vector>();
   REQUIRE(results.size() == 2);
   REQUIRE(results[0].id == 1);
   REQUIRE(results[0].name == "Alice");
@@ -565,6 +549,7 @@ TEST_CASE("std::ranges::filter_view with select_all") {
   auto filtered  = std::ranges::filter_view(std::move(sub), [](const User& u) { return u.age > 25; });
   int  count     = 0;
   for (auto&& user : filtered) {
+    (void)user;
     count++;
   }
   REQUIRE(count == 2);
