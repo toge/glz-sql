@@ -2,7 +2,7 @@
 
 ## 概要
 
-Glaze リフレクションを活用した C++ ヘッダオンリーの SQLite ORM ライブラリ。  
+Glaze リフレクションを活用した C++ ヘッダオンリーの SQLite ORM ライブラリ。
 任意の構造体を `sql_table` コンセプトで定義すると、型安全な CRUD 操作とコンパイル時 WHERE 条件構築が可能になる。
 
 ## ビルドとテスト
@@ -13,14 +13,11 @@ Glaze リフレクションを活用した C++ ヘッダオンリーの SQLite O
 
 # テスト実行
 ./test.sh          # build/ で ctest -V を実行
-
-# 静的リンク版
-./build.sh static  # build_static/ に出力
 ```
 
 - パッケージマネージャ: vcpkg（`~/vm/vcpkg`）がデフォルト。`conanfile.py` が存在すれば Conan に切替
-- vcpkg 依存: `glaze`, `sqlite3`, `quill`, `catch2`
-- C++ 標準: C++26 > C++23 > C++20 の順で自動選択（`cxx_std_26` が優先）
+- vcpkg 依存: `glaze`, `sqlite3`, `catch2`
+- C++ 標準: C++23
 - `VCPKG_ROOT` は `build.sh` 内で `~/vm/vcpkg` に固定。環境変数で上書き可能
 
 ## ディレクトリ構成

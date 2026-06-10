@@ -45,9 +45,6 @@
 # 通常ビルド（vcpkg 使用）
 ./build.sh
 
-# 静的リンク版
-./build.sh static
-
 # テスト実行
 ./test.sh
 ```
