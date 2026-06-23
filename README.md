@@ -30,24 +30,13 @@
 
 - C++20 以上（C++26 > C++23 > C++20 の順で自動選択）
 - CMake 3.25+
-- vcpkg または Conan
+- vcpkg
 
 ### 依存ライブラリ
 
 - [glaze](https://github.com/stephenberry/glaze) — JSON / リフレクション
 - [SQLite3](https://sqlite.org/) — データベースエンジン
-- [quill](https://github.com/odygrd/quill) — ロギング
 - [Catch2](https://github.com/catchorg/Catch2) — テストフレームワーク（テスト時のみ）
-
-## ビルド
-
-```bash
-# 通常ビルド（vcpkg 使用）
-./build.sh
-
-# テスト実行
-./test.sh
-```
 
 ## 使い方
 
