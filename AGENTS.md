@@ -37,10 +37,10 @@ test/                 # Catch2 テスト
 
 ## アーキテクチャの要点
 
-- **`sql_repository<T>`**: `T::table_name`（`std::string_view`）と `glz::meta<T>` が必要。`sql_table` コンセプトで制約
+- **`sql_repository<T>`**: `T::table_name`（`std::string_view`）と `glz::meta<T>` が必要。`sql_table` コンセプトで制約され、行型はデフォルト構築可能・各フィールドが代入可能で、TEXT 列には所有型（`std::string` / `std::optional<std::string>`）を要求
 - **条件構築**: `where_eq<"column">(value)` のように NTTP でカラム名を指定。`&&` / `||` で合成可能。`valid_column<"col", T>` でコンパイル時にカラム存在を検証
 - **対応条件**: `eq`, `ne`, `lt`, `le`, `gt`, `ge`, `like`, `in`, `between`, `is_null`, `is_not_null`
-- **対応型**: `int64_t`, `double`, `std::string`, `std::string_view`, `const char*`, `char[N]`, `std::optional<T>`（NULL 許容）
+- **対応型**: 構造体フィールドは `int64_t`, `double`, `std::string`, `std::optional<T>`（NULL 許容）。条件値や一時的なバインド値では `std::string_view`, `const char*` も利用可能
 - **`database_interface`**: 抽象クラス。`sqlite_database` が具象実装。`:memory:` でインメモリ DB
 - **名前空間**: 全て `glz_sql` 内
 

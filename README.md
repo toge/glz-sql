@@ -8,7 +8,7 @@
 - **コンパイル時 WHERE 条件**: NTTP（Non-Type Template Parameter）によるカラム名指定で、コンパイル時にカラム存在を検証
 - **条件の合成**: `&&` / `||` 演算子で条件を自由に組み合わせ可能
 - **NULL 許容**: `std::optional<T>` で NULL 値を型安全に扱える
-- **ヘッダオンリー**: ライブラリのリンク不要。`include/` をパスに追加するだけ
+- **ヘッダオンリー**: ライブラリ本体はヘッダオンリー。利用時は SQLite3 へのリンクが必要
 
 ## 対応条件
 
@@ -28,7 +28,7 @@
 
 ## 必要環境
 
-- C++20 以上（C++26 > C++23 > C++20 の順で自動選択）
+- C++23
 - CMake 3.25+
 - vcpkg
 
@@ -41,6 +41,10 @@
 ## 使い方
 
 ### 構造体の定義
+
+`sql_repository<T>` / `sql_iterator<T>` の行型は、デフォルト構築可能で、各フィールドへ読み出し結果を書き戻せる必要があります。`const` フィールドやネストした `std::optional` は非対応です。
+
+TEXT 列は、読み出し後も所有権を保てる `std::string` または `std::optional<std::string>` を使用してください。`std::string_view` / `const char*` は条件値や一時的なバインド値には使えますが、リポジトリの行型メンバとしては非対応です。
 
 ```cpp
 #include <glaze/glaze.hpp>
@@ -79,6 +83,9 @@ struct glz::meta<User> {
 // データベース接続（インメモリ）
 glz_sql::sqlite_database      db(":memory:");
 glz_sql::sql_repository<User> repo(db);
+
+// CMake では SQLite3 も含めて公開ターゲットをリンク
+// target_link_libraries(your_target PRIVATE glz-sql::glz-sql)
 
 // テーブル作成
 repo.create_table();
