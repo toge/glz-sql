@@ -6,16 +6,65 @@
 #include "sqlite_bind.hpp"
 
 #include <cstddef>
+#include <concepts>
 #include <format>
 #include <glaze/glaze.hpp>
 #include <iostream>
 #include <iterator>
 #include <optional>
-#include <string>
 #include <ranges>
+#include <string>
 #include <string_view>
+#include <type_traits>
+#include <utility>
 
 namespace glz_sql {
+
+namespace detail {
+
+template <typename T>
+consteval auto reflected_field_type_supported() -> bool {
+  using field_type = std::remove_cvref_t<T>;
+
+  if constexpr (is_optional<field_type>::value) {
+    using value_type = typename field_type::value_type;
+    return !is_optional<value_type>::value && reflected_field_type_supported<value_type>();
+  } else {
+    return std::same_as<field_type, int64_t> || std::same_as<field_type, double> || std::same_as<field_type, std::string>;
+  }
+}
+
+template <size_t I, typename T>
+consteval auto reflected_field_read_supported() -> bool {
+  using field_reference = decltype((std::declval<T&>().*(glz::get<I>(glz::reflect<T>::values))));
+  using field_type      = std::remove_cvref_t<field_reference>;
+
+  if constexpr (!reflected_field_type_supported<field_type>()) {
+    return false;
+  } else {
+    using column_type = decltype(sqlite_type_traits<field_type>::column(std::declval<sqlite3_stmt*>(), 0));
+    return std::assignable_from<field_reference, column_type>;
+  }
+}
+
+template <typename T>
+consteval auto reflected_fields_supported() -> bool {
+  if constexpr (!requires {
+                  glz::reflect<T>::size;
+                  glz::reflect<T>::values;
+                }) {
+    return false;
+  } else {
+    return []<size_t... Is>(std::index_sequence<Is...>) {
+      return std::default_initializable<T> && (reflected_field_read_supported<Is, T>() && ...);
+    }(std::make_index_sequence<glz::reflect<T>::size>{});
+  }
+}
+
+}  // namespace detail
+
+template <typename T>
+concept sql_record = requires { glz::meta<T>::value; } && detail::reflected_fields_supported<T>();
 
 /**
  * @brief イテレータの終端を表すセントリルクラス
@@ -34,6 +83,7 @@ class sql_sentinel {
  * @brief SQLite クエリ結果を走査する入力イテレータ
  */
 template <typename T>
+  requires sql_record<T>
 class sql_iterator {
   public:
   using value_type        = T;
@@ -125,22 +175,7 @@ class sql_iterator {
 template <typename T>
 concept sql_table = requires {
   { T::table_name } -> std::convertible_to<std::string_view>;
-  glz::meta<T>::value;
-};
-
-/**
- * @brief 指定されたカラム名が構造体のフィールドとして存在することを保証するコンセプト
- */
-template <fixed_string Column, typename T>
-concept valid_column = [] {
-  constexpr auto n = glz::reflect<T>::size;
-  for (size_t i = 0; i < n; ++i) {
-    if (glz::reflect<T>::keys[i] == std::string_view(Column)) {
-      return true;
-    }
-  }
-  return false;
-}();
+} && sql_record<T>;
 
 /**
  * @brief Glaze リフレクションを活用した汎用 SQLite リポジトリクラス

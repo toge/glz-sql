@@ -4,8 +4,10 @@
 #include "fixed_string.hpp"
 #include "sqlite_bind.hpp"
 
+#include <cstddef>
 #include <concepts>
 #include <format>
+#include <glaze/glaze.hpp>
 #include <optional>
 #include <sqlite3.h>
 #include <string>
@@ -15,6 +17,34 @@
 #include <utility>
 
 namespace glz_sql {
+
+namespace detail {
+
+  template <fixed_string Column, typename T>
+  consteval auto valid_column_impl() -> bool {
+    if constexpr (!requires {
+                    glz::reflect<T>::size;
+                    glz::reflect<T>::keys;
+                  }) {
+      return false;
+    } else {
+      constexpr auto n = glz::reflect<T>::size;
+      for (size_t i = 0; i < n; ++i) {
+        if (glz::reflect<T>::keys[i] == std::string_view(Column)) {
+          return true;
+        }
+      }
+      return false;
+    }
+  }
+
+}  // namespace detail
+
+/**
+ * @brief 指定されたカラム名が構造体のフィールドとして存在することを保証するコンセプト
+ */
+template <fixed_string Column, typename T>
+concept valid_column = detail::valid_column_impl<Column, T>();
 
 /**
  * @brief サポートされる比較演算子
@@ -189,10 +219,21 @@ concept any_condition = requires { typename T::is_leaf_condition_tag; } || requi
  * @brief 条件が妥当かチェック
  *
  * 葉条件 (leaf_condition) と合成条件 (composite_condition) の両方を許可。
- * カラム名の存在チェックは含めない (型システム外)。
+ * 葉条件ではカラム名の存在もコンパイル時に検証する。
  */
 template <typename Cond, typename T>
-concept valid_condition = any_condition<Cond>;
+consteval auto valid_condition_impl() -> bool {
+  if constexpr (requires { typename Cond::is_leaf_condition_tag; }) {
+    return valid_column<Cond::column, T>;
+  } else if constexpr (requires { typename Cond::is_composite_condition_tag; }) {
+    return valid_condition_impl<typename Cond::left_type, T>() && valid_condition_impl<typename Cond::right_type, T>();
+  } else {
+    return false;
+  }
+}
+
+template <typename Cond, typename T>
+concept valid_condition = valid_condition_impl<Cond, T>();
 
 namespace detail {
 
@@ -227,6 +268,7 @@ class leaf_condition {
   using is_leaf_condition_tag    = void;
   static constexpr compare_op op = Op;
   using column_type              = decltype(C);
+  static constexpr auto column   = C;
 
   constexpr leaf_condition() : value_{}, value2_{} {}
   explicit constexpr leaf_condition(maybe_empty<V> v) : value_(std::move(v)), value2_{} {}
