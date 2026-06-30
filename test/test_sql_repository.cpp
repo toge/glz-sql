@@ -36,6 +36,84 @@ struct glz::meta<Product> {
   static constexpr auto value = object("id", &Product::id, "name", &Product::name, "price", &Product::price);
 };
 
+struct StringViewUser {
+  int64_t                           id{};
+  std::string_view                  name{};
+  static constexpr std::string_view table_name = "string_view_users";
+};
+
+template <>
+struct glz::meta<StringViewUser> {
+  using type                  = StringViewUser;
+  static constexpr auto value = object("id", &StringViewUser::id, "name", &StringViewUser::name);
+};
+
+struct CStrUser {
+  int64_t                           id{};
+  const char*                       name{};
+  static constexpr std::string_view table_name = "c_str_users";
+};
+
+template <>
+struct glz::meta<CStrUser> {
+  using type                  = CStrUser;
+  static constexpr auto value = object("id", &CStrUser::id, "name", &CStrUser::name);
+};
+
+struct BoolUser {
+  int64_t                           id{};
+  bool                              active{};
+  static constexpr std::string_view table_name = "bool_users";
+};
+
+template <>
+struct glz::meta<BoolUser> {
+  using type                  = BoolUser;
+  static constexpr auto value = object("id", &BoolUser::id, "active", &BoolUser::active);
+};
+
+struct NestedOptionalUser {
+  int64_t                                          id{};
+  std::optional<std::optional<std::string>>        nickname{};
+  static constexpr std::string_view                table_name = "nested_optional_users";
+};
+
+template <>
+struct glz::meta<NestedOptionalUser> {
+  using type                  = NestedOptionalUser;
+  static constexpr auto value = object("id", &NestedOptionalUser::id, "nickname", &NestedOptionalUser::nickname);
+};
+
+struct ConstFieldUser {
+  int64_t                           id{};
+  const std::string                 name{};
+  static constexpr std::string_view table_name = "const_field_users";
+};
+
+template <>
+struct glz::meta<ConstFieldUser> {
+  using type                  = ConstFieldUser;
+  static constexpr auto value = object("id", &ConstFieldUser::id, "name", &ConstFieldUser::name);
+};
+
+struct NoDefaultUser {
+  int64_t                           id{};
+  std::string                       name{};
+  static constexpr std::string_view table_name = "no_default_users";
+
+  NoDefaultUser() = delete;
+  NoDefaultUser(int64_t id, std::string name) : id(id), name(std::move(name)) {}
+};
+
+template <>
+struct glz::meta<NoDefaultUser> {
+  using type                  = NoDefaultUser;
+  static constexpr auto value = object("id", &NoDefaultUser::id, "name", &NoDefaultUser::name);
+};
+
+template <typename T>
+concept sql_iterator_available = requires { typename glz_sql::sql_iterator<T>; };
+
 TEST_CASE("sql_repository: create_table") {
   glz_sql::sqlite_database      db(":memory:");
   glz_sql::sql_repository<User> repo(db);
@@ -181,6 +259,23 @@ TEST_CASE("sql_repository: compile-time column validation") {
   SUCCEED("valid_column concept correctly validates column names at compile time");
 }
 
+TEST_CASE("sql_repository: rejects non-owning text fields") {
+  static_assert(!glz_sql::sql_table<StringViewUser>);
+  static_assert(!glz_sql::sql_table<CStrUser>);
+  static_assert(!glz_sql::sql_table<BoolUser>);
+  static_assert(!glz_sql::sql_table<NestedOptionalUser>);
+  static_assert(!glz_sql::sql_table<ConstFieldUser>);
+  static_assert(!glz_sql::sql_table<NoDefaultUser>);
+  static_assert(!sql_iterator_available<StringViewUser>);
+  static_assert(!sql_iterator_available<CStrUser>);
+  static_assert(!sql_iterator_available<BoolUser>);
+  static_assert(!sql_iterator_available<NestedOptionalUser>);
+  static_assert(!sql_iterator_available<ConstFieldUser>);
+  static_assert(!sql_iterator_available<NoDefaultUser>);
+
+  SUCCEED("sql_table rejects non-owning text fields");
+}
+
 TEST_CASE("condition: where_eq") {
   auto c    = glz_sql::where_eq<"name">(std::string{"Alice"});
   auto frag = c.fragment();
@@ -260,26 +355,13 @@ TEST_CASE("condition: AND of ORs") {
 TEST_CASE("condition: valid_condition concept") {
   using namespace glz_sql;
 
-  // struct で User テーブル風のカラム名セットを定義
-  struct fake_user {
-    int         age;
-    std::string name;
-  };
-
-  // 静的にチェック (static_assert)
-  static_assert(valid_condition<decltype(where_eq<"age">(int64_t{20})), fake_user>);
-  static_assert(valid_condition<decltype(where_eq<"name">(std::string{"x"})), fake_user>);
-  static_assert(valid_condition<decltype(where_eq<"missing">(int64_t{20})), fake_user>);  // コンパイル時に reject されない (型システム外) — runtime 検証は T13-T16 で行う
-  static_assert(!valid_condition<int, fake_user>);
-  static_assert(!valid_condition<std::string, fake_user>);
-
-  // composite の再帰
-  static_assert(valid_condition<decltype(where_eq<"age">(int64_t{20}) && where_eq<"name">(std::string{"x"})), fake_user>);
-  // ただしカラム名検証は構造体リフレクションを使うので、Glaze reflect された struct でないと通らない
-  // fake_user には glaze reflect がないので、テストではチェックの通過のみを確認
-
-  // composite のコンパイル時 reject
-  static_assert(!valid_condition<int, fake_user>);
+  static_assert(valid_condition<decltype(where_eq<"age">(int64_t{20})), User>);
+  static_assert(valid_condition<decltype(where_eq<"name">(std::string{"x"})), User>);
+  static_assert(!valid_condition<decltype(where_eq<"missing">(int64_t{20})), User>);
+  static_assert(valid_condition<decltype(where_eq<"age">(int64_t{20}) && where_eq<"name">(std::string{"x"})), User>);
+  static_assert(!valid_condition<decltype(where_eq<"age">(int64_t{20}) && where_eq<"missing">(std::string{"x"})), User>);
+  static_assert(!valid_condition<int, User>);
+  static_assert(!valid_condition<std::string, User>);
 
   REQUIRE(true);  // ダミー
 }
