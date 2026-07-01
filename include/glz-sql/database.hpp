@@ -52,7 +52,8 @@ class sqlite_database : public database_interface {
    * @param db_path データベースファイルパス（":memory:" でインメモリ）
    */
   explicit sqlite_database(std::string_view db_path = ":memory:") {
-    auto const result = sqlite3_open(db_path.data(), &db_);
+    auto const path_str = std::string(db_path);
+    auto const result   = sqlite3_open(path_str.c_str(), &db_);
     if (result != SQLITE_OK) {
       error_msg_ = sqlite3_errmsg(db_);
     }
@@ -85,7 +86,8 @@ class sqlite_database : public database_interface {
    */
   auto execute(std::string_view sql) -> bool override {
     char*      char_msg = nullptr;
-    auto const result   = sqlite3_exec(db_, sql.data(), nullptr, nullptr, &char_msg);
+    auto const sql_str  = std::string(sql);
+    auto const result   = sqlite3_exec(db_, sql_str.c_str(), nullptr, nullptr, &char_msg);
     if (result != SQLITE_OK) {
       if (char_msg != nullptr) {
         error_msg_ = char_msg;
